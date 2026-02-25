@@ -1,0 +1,9 @@
+../semaphore/semaphore_t.cpp:21:1:semaphore_t::semaphore_t(char*)	1
+../semaphore/semaphore_t.cpp:29:1:semaphore_t::~semaphore_t()	1
+../semaphore/semaphore_t.cpp:29:1:virtual semaphore_t::~semaphore_t()	1
+../semaphore/semaphore_t.cpp:34:9:uint8_t semaphore_t::acquire(uint32_t)	2
+../semaphore/semaphore_t.cpp:46:9:uint8_t semaphore_t::release()	2
+../semaphore/semaphore_t.cpp:56:1:void __static_initialization_and_destruction_0()	1
+../semaphore/semaphore_t.cpp:56:1:void __static_initialization_and_destruction_1()	1
+../semaphore/semaphore_t.cpp:56:1:cpp)	1
+../semaphore/semaphore_t.cpp:56:1:cpp)	1

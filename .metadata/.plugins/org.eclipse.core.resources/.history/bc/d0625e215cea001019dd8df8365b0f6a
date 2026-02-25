@@ -1,0 +1,407 @@
+/*
+ * realtimeclock.cpp
+ *
+ *  Created on: June 16, 2025
+ *      Author: Amogh MP
+ */
+
+#include "realtimeclock.h"
+#include "mutex_t.h"
+#include "adc.h"
+#include "gpio.h"
+#include "device_info.h"
+#include "uplink_management.h"
+#include "peripherals_t.h"
+
+
+
+uint8_t power_status = 0;
+uint8_t charge_status = 0;
+uint8_t present_battery_percentage = 0;
+
+
+real_time_clock rtc(&hrtc);
+date_time_t current_date_time;
+
+
+
+real_time_clock::real_time_clock(RTC_HandleTypeDef * rtc_handle)
+{
+	hrtc = rtc_handle;
+
+}
+
+
+real_time_clock::~real_time_clock()
+{
+	// TODO Auto-generated destructor stub
+}
+
+
+uint8_t real_time_clock::read_back_up_register(uint16_t data, date_time_t date_time )
+{
+	uint32_t back_up_register = 0;
+
+	if(1 == rtc_mutex.lock(500))
+	{
+		back_up_register = HAL_RTCEx_BKUPRead(hrtc, RTC_BKP_DR1);
+
+		rtc_mutex.unlock();
+	}
+
+
+	if(back_up_register != 0x32F2)
+	{
+		HAL_PWR_EnableBkUpAccess();
+		set_date_time(date_time);
+		HAL_PWR_DisableBkUpAccess();
+
+		return back_up_register;
+	}
+	else
+	{
+		return back_up_register;
+	}
+}
+
+
+uint8_t real_time_clock::read_back_up_register_check(void)
+{
+	uint32_t back_up_register = 0;
+
+	if(1 == rtc_mutex.lock(500))
+	{
+		back_up_register = HAL_RTCEx_BKUPRead(hrtc, RTC_BKP_DR1);
+
+		rtc_mutex.unlock();
+	}
+
+	if( back_up_register != 0x32F2)
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+
+void real_time_clock::set_time_in_utc(uint32_t epoch_time)
+{
+	if(1 == rtc_mutex.lock(500))
+	{
+		struct tm utc_tm;
+		time_t epoch = epoch_time;
+		gmtime_r((time_t*)&epoch, &utc_tm);
+
+
+		date_time_t time;
+		time.Date = utc_tm.tm_mday;
+		time.Month = utc_tm.tm_mon + 1;
+
+//		time.Year = utc_tm.tm_year - 2000;
+
+		time.year = utc_tm.tm_year + 1900;
+
+		time.Hours = utc_tm.tm_hour;
+		time.Minutes = utc_tm.tm_min;
+		time.Seconds = utc_tm.tm_sec;
+
+		set_date_time(time);
+
+		rtc_mutex.unlock();
+	}
+}
+
+
+void real_time_clock::set_date_time(date_time_t datetime)
+{
+	if(1 == rtc_mutex.lock(500))
+	{
+		sDate.Year  = datetime.year - 1900;
+		sDate.Date = datetime.Date;
+		sDate.Month = datetime.Month;
+		sTime.Hours = datetime.Hours;
+		sTime.Minutes = datetime.Minutes;
+		sTime.Seconds = datetime.Seconds;
+
+		HAL_RTC_SetTime(hrtc, &sTime, RTC_FORMAT_BIN);
+		HAL_RTC_SetDate(hrtc, &sDate, RTC_FORMAT_BIN);
+
+		HAL_RTCEx_BKUPWrite(hrtc, RTC_BKP_DR1, 0x32F2);
+
+		rtc_mutex.unlock();
+	}
+}
+
+
+date_time_t real_time_clock::get_date_time(void)
+{
+	date_time_t date_time;
+
+	if(1 == rtc_mutex.lock(500))
+	{
+		HAL_RTC_GetTime(hrtc, &sTime, RTC_FORMAT_BIN);
+		HAL_RTC_GetDate(hrtc, &sDate, RTC_FORMAT_BIN);
+
+		date_time.year  = 2000 + sDate.Year;
+		date_time.Year = sDate.Year;
+		date_time.Month = sDate.Month;
+		date_time.Date = sDate.Date;
+		date_time.Hours = sTime.Hours;
+		date_time.Minutes = sTime.Minutes;
+		date_time.Seconds = sTime.Seconds;
+
+		rtc_mutex.unlock();
+	}
+
+	return(date_time);
+}
+
+
+uint32_t real_time_clock::get_time_in_utc(void)
+{
+	struct tm t = {0};
+	time_t t_of_day = 0;
+
+	if (1 == rtc_mutex.lock(500))
+	{
+		if ((HAL_OK == HAL_RTC_GetTime(hrtc, &sTime, RTC_FORMAT_BIN)) && (HAL_OK == HAL_RTC_GetDate(hrtc, &sDate, RTC_FORMAT_BIN)))
+		{
+			t.tm_year = sDate.Year + 0;
+			t.tm_mon = sDate.Month - 1;
+			t.tm_mday = sDate.Date;
+			t.tm_hour = sTime.Hours;
+			t.tm_min = sTime.Minutes;
+			t.tm_sec = sTime.Seconds;
+			t.tm_isdst = -1;
+
+			t_of_day = mktime(&t);
+		}
+
+		rtc_mutex.unlock();
+	}
+
+	return (uint32_t)t_of_day;
+}
+
+
+uint32_t real_time_clock::get_time_in_utc(date_time_t date_time)
+{
+	uint8_t date_time_str[8] = {'\0'};
+	struct tm t;
+	time_t t_of_day;
+
+	if(1 == rtc_mutex.lock(500))
+	{
+		date_time_str[0] = date_time.Year;
+		date_time_str[1] = date_time.Month;
+		date_time_str[2] = date_time.Date;
+
+		date_time_str[3] = date_time.Hours;
+		date_time_str[4] = date_time.Minutes;
+		date_time_str[5] = date_time.Seconds;
+		date_time_str[6] = '\0';
+
+		if (sDate.Year == 70)
+		{
+			t.tm_year = ((uint16_t)date_time_str[0] + 1900) - 1900;
+		}
+		else
+		{
+			t.tm_year = ((uint16_t)date_time_str[0] + 2000) - 1900;
+		}
+
+		t.tm_mon = date_time_str[1] - 1;
+		t.tm_mday = date_time_str[2];
+		t.tm_hour = date_time_str[3];
+		t.tm_min = date_time_str[4];
+		t.tm_sec = date_time_str[5];
+		t.tm_isdst = -1;
+		t_of_day = mktime(&t);
+
+		rtc_mutex.unlock();
+	}
+
+	return (uint32_t) t_of_day;
+}
+
+
+void epoch_to_gmt(uint32_t date_time, char * date_time_string)
+{
+	if(1 == rtc_mutex.lock(500))
+	{
+		time_t rawtime = date_time;
+		struct tm  ts;
+
+		ts = *localtime(&rawtime);
+		sprintf(date_time_string, "%02d:%02d:%02d T %02d:%02d:%02d",(ts.tm_year + 1900) - 2000,  (ts.tm_mon + 1),ts.tm_mday,  ts.tm_hour, ts.tm_min, ts.tm_sec);
+
+		rtc_mutex.unlock();
+	}
+}
+
+
+
+void read_switch_status(void)
+{
+	if (GPIO_PIN_RESET == user_push_button.read())
+	{
+		osDelay(1000);
+
+		if (GPIO_PIN_RESET == user_push_button.read())
+		{
+			for (uint8_t i = 0 ; i < 10 ; i++)
+			{
+				red_led.off();
+				osDelay(100);
+				red_led.on();
+
+				blue_led.off();
+				osDelay(100);
+				blue_led.on();
+
+				osDelay(100);
+			}
+
+			if (GPIO_PIN_SET == user_push_button.read())
+			{
+				osDelay(2000);
+				__disable_irq();
+
+				HAL_NVIC_SystemReset();
+			}
+
+			osDelay(1000);
+
+			if (GPIO_PIN_RESET == user_push_button.read())
+			{
+				for (uint8_t i = 0 ; i < 10 ; i++)
+				{
+					red_led.off();
+					osDelay(100);
+					red_led.on();
+
+					blue_led.off();
+					osDelay(100);
+					blue_led.on();
+
+					green_led.off();
+					osDelay(100);
+					green_led.on();
+
+					osDelay(100);
+				}
+
+				if (GPIO_PIN_SET == user_push_button.read())
+				{
+					eeprom.write_byte(0xFE, START_ADDRESS_OF_NEW_EEPROM);
+
+					osDelay(2000);
+					__disable_irq();
+
+					HAL_NVIC_SystemReset();
+				}
+			}
+		}
+
+		red_led.off();
+		green_led.off();
+		blue_led.off();
+	}
+}
+
+
+/* USER CODE BEGIN Header_start_rtc_task */
+/**
+  * @brief  Function implementing the rtc_task thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_start_rtc_task */
+void start_rtc_task(void const * argument)
+{
+  /* USER CODE BEGIN 5 */
+
+	uint32_t previous_health_packet_time = 0;
+	uint32_t present_health_packet_time = 0;
+
+	osDelay(5000);
+
+  /* Infinite loop */
+  for(;;)
+  {
+	  HAL_IWDG_Refresh(&hiwdg1);
+
+	  power_status = !power_good.read(); // low when input is valid, high-impedance otherwise.
+	  charge_status = !charger_staus.read(); // low during charging, high-impedance when done/disabled.
+
+	  present_health_packet_time = rtc.get_time_in_utc();
+
+	  debug.printf("power_status: %d, charge_status: %d\r\n", power_status, charge_status);
+
+	  present_battery_percentage = battery.read_battery_percentage_average(2);
+
+	  if ((1 == power_status) && (1 == charge_status))
+	  {
+		  debug.printf("battery charging\r\n");
+
+//		  present_battery_percentage = battery.read_battery_percentage_average(2);
+	  }
+
+	  else if ((1 == power_status) && (0 == charge_status))
+	  {
+		  debug.printf("battery disconnected/charging complete\r\n");
+	  }
+
+	  if ((1 == power_status) && (0 == peripherals.power_on_all_peripherals))
+	  {
+		  peripherals.power_on_all_peripherals = 1;
+	  }
+
+	  if ((present_battery_percentage < 25) && (0 == power_status))
+	  {
+		  if (peripherals.power_on_all_peripherals != 0)
+		  {
+			  debug.printf("low battery -> turning-off all modules\r\n");
+
+			  peripherals.power_on_all_peripherals = 0;
+
+			  peripherals.store_to_eeprom();
+			  osDelay(100);
+			  peripherals.read_from_eeprom();
+		  }
+
+		  red_led.off();
+	  }
+	  else
+	  {
+		  if (1 == power_status)
+		  {
+			  red_led.on();
+		  }
+		  else
+		  {
+			  red_led.toggle();
+			  blue_led.off();
+			  green_led.off();
+		  }
+
+		  if ((present_health_packet_time - previous_health_packet_time) >= DEFAULT_HEALTH_PACKET_FREQUENCY_IN_SEC)
+		  {
+			  previous_health_packet_time = present_health_packet_time;
+
+			  next_message.health = 1;
+
+			  next_message.update();
+		  }
+	  }
+
+
+	  read_switch_status();
+
+	  osDelay(10000);
+  }
+  /* USER CODE END 5 */
+}

@@ -1,0 +1,569 @@
+/*
+ * downlink_t.cpp
+ *
+ *  Created on: Oct 6, 2025
+ *      Author: Amogh MP
+ */
+
+
+
+#include "downlink_t.h"
+#include "semaphore_t.h"
+#include "uplink_management.h"
+#include "device_info.h"
+#include "realtimeclock.h"
+#include "peripherals_t.h"
+#include "ArduinoJson.h"
+#include "cellular.h"
+#include "lorawan_stm32wl.h"
+
+
+
+downlink_t downlink;
+
+
+
+downlink_t::downlink_t()
+{
+
+}
+
+
+
+downlink_t::~downlink_t()
+{
+
+}
+
+
+uint8_t downlink_t::parse_set_config_downlink_command(void)
+{
+	uint8_t result = 0;
+
+	if ((0 == peripherals.lorawan_enable) && (lorawan_enable != read_device_info.communication_mode_enabled))
+	{
+		DynamicJsonDocument doc(512);
+
+		DeserializationError error = deserializeJson(doc, processing_buffer);
+
+		if (error)
+		{
+			debug.printf("parse_set_command_downlink_command parse failed\r\n");
+			result = 0;
+		}
+
+		else
+		{
+			const char* command = doc["command"]; // "SET_CONFIG"
+			const char* device_id = doc["device_id"]; // "1234567890"
+			long epoch_time = doc["epoch_time"]; // "234567890"
+			int sampling_frequency = doc["sampling_frequency"]; // 30
+			long max_tank_capacity = doc["max_tank_capacity"]; // 300000
+			int tank_length = doc["tank_length"]; // 10
+			int tank_width = doc["tank_width"]; // 10
+			int tank_height = doc["tank_height"]; // 6
+			int wifi_enabled = doc["wifi_enabled"]; // 1
+			int cellular_enabled = doc["cellular_enabled"]; // 1
+			int lorawan_enabled = doc["lorawan_enabled"]; // 1
+			int gps_enabled = doc["gps_enabled"]; // 1
+			int lbs_enabled = doc["lbs_enabled"];
+
+
+			if ((strstr(device_id, read_device_info.device_id) != NULL) && (epoch_time > JANUARY_1_2025_EPOCH_TIME) && (epoch_time < JANUARY_1_2050_EPOCH_TIME) &&
+					(sampling_frequency >= DEFAULT_DATA_SAMPLING_FREQUENCY_IN_SEC) && (sampling_frequency < MAX_SAMPLING_FREQUENCY_IN_SECONDS) &&
+					(max_tank_capacity != 0) && (tank_length != 0) && (tank_width != 0) && (tank_height != 0))
+			{
+				rtc.set_time_in_utc(epoch_time);
+
+				write_device_info.data_sampling_frequency_in_sec = sampling_frequency;
+
+				write_device_info.max_tank_capacity_in_litres = max_tank_capacity;
+				write_device_info.tank_length = tank_length;
+				write_device_info.tank_width = tank_width;
+				write_device_info.tank_height = tank_height;
+
+				if (wifi_enabled && cellular_enabled && lorawan_enabled)
+				{
+					wifi_enabled = 0;
+					lorawan_enabled = 0;
+					cellular_enabled = 1;
+				}
+				else if (wifi_enabled && cellular_enabled)
+				{
+					wifi_enabled = 0;
+					cellular_enabled = 1;
+				}
+				else if (wifi_enabled && lorawan_enabled)
+				{
+					lorawan_enabled = 0;
+					wifi_enabled = 1;
+				}
+				else if (cellular_enabled && lorawan_enabled)
+				{
+					lorawan_enabled = 0;
+					cellular_enabled = 1;
+				}
+
+
+				peripherals.wifi_enable = wifi_enabled;
+				peripherals.cellular_enable = cellular_enabled;
+				peripherals.lorawan_enable = lorawan_enabled;
+
+				peripherals.gps_enable = gps_enabled;
+				peripherals.lbs_enable = lbs_enabled;
+
+				peripherals.store_to_eeprom();
+				osDelay(100);
+				peripherals.read_from_eeprom();
+
+				write_device_info.update();
+				osDelay(100);
+				read_device_info.get();
+
+				result = 1;
+			}
+		}
+	}
+
+	else if ((1 == peripherals.lorawan_enable) && (lorawan_enable == read_device_info.communication_mode_enabled))
+	{
+		char device_id[16] = {'\0'};
+		sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+				processing_buffer[4], processing_buffer[5], processing_buffer[6], processing_buffer[7], processing_buffer[8]);
+
+		uint32_t epoch_time = (processing_buffer[9] << 24) | (processing_buffer[10] << 16) | (processing_buffer[11] << 8) |
+				processing_buffer[12];
+
+		uint16_t sampling_freq = (processing_buffer[13] << 8) | processing_buffer[14];
+
+		uint32_t tank_capacity = (processing_buffer[15] << 24) | (processing_buffer[16] << 16) | (processing_buffer[17] << 8) |
+				processing_buffer[18];
+
+		uint8_t tank_length = processing_buffer[19];
+		uint8_t tank_width = processing_buffer[20];
+		uint8_t tank_height = processing_buffer[21];
+
+		uint8_t wifi_enabled = processing_buffer[22];
+		uint8_t cellular_enabled = processing_buffer[23];
+		uint8_t lorawan_enabled = processing_buffer[24];
+		uint8_t gps_enabled = processing_buffer[25];
+		uint8_t lbs_enabled = processing_buffer[26];
+
+		debug.printf("device_id: %s, epoch_time: %lX, sampling_freq: %X, "
+				"tank_capacity: %X, tank_length: %X, tank_width: %X, tank_height: %X, "
+				"wifi_enabled: %X, cellular_enabled: %X, lorawan_enabled: %X, gps_enabled: %X, lbs_enabled: %X\r\n",
+				device_id, epoch_time, sampling_freq, tank_capacity, tank_length, tank_width, tank_height,
+				wifi_enabled, cellular_enabled, lorawan_enabled, gps_enabled, lbs_enabled);
+
+		if ((strstr(device_id, read_device_info.lorawan_device_eui) != NULL) && (epoch_time > JANUARY_1_2025_EPOCH_TIME) && (epoch_time < JANUARY_1_2050_EPOCH_TIME) &&
+				(sampling_freq >= DEFAULT_DATA_SAMPLING_FREQUENCY_IN_SEC) && (sampling_freq < MAX_SAMPLING_FREQUENCY_IN_SECONDS) &&
+				(tank_capacity != 0) && (tank_length != 0) && (tank_width != 0) && (tank_height != 0))
+		{
+			rtc.set_time_in_utc(epoch_time);
+
+			write_device_info.data_sampling_frequency_in_sec = sampling_freq;
+
+			write_device_info.max_tank_capacity_in_litres = tank_capacity;
+			write_device_info.tank_length = tank_length;
+			write_device_info.tank_width = tank_width;
+			write_device_info.tank_height = tank_height;
+
+			if (wifi_enabled && cellular_enabled && lorawan_enabled)
+			{
+				wifi_enabled = 0;
+				lorawan_enabled = 0;
+				cellular_enabled = 1;
+			}
+			else if (wifi_enabled && cellular_enabled)
+			{
+				wifi_enabled = 0;
+				cellular_enabled = 1;
+			}
+			else if (wifi_enabled && lorawan_enabled)
+			{
+				lorawan_enabled = 0;
+				wifi_enabled = 1;
+			}
+			else if (cellular_enabled && lorawan_enabled)
+			{
+				lorawan_enabled = 0;
+				cellular_enabled = 1;
+			}
+
+
+			peripherals.wifi_enable = wifi_enabled;
+			peripherals.cellular_enable = cellular_enabled;
+			peripherals.lorawan_enable = lorawan_enabled;
+
+			peripherals.gps_enable = gps_enabled;
+			peripherals.lbs_enable = lbs_enabled;
+
+			peripherals.store_to_eeprom();
+			osDelay(100);
+			peripherals.read_from_eeprom();
+
+			write_device_info.update();
+			osDelay(100);
+			read_device_info.get();
+
+			result = 1;
+		}
+	}
+
+	return result;
+}
+
+
+uint8_t downlink_t::parse_get_config_downlink_command(void)
+{
+	uint8_t result = 0;
+
+	if ((0 == peripherals.lorawan_enable) && (lorawan_enable != read_device_info.communication_mode_enabled))
+	{
+		DynamicJsonDocument doc(128);
+
+		DeserializationError error = deserializeJson(doc, processing_buffer);
+
+		if (error)
+		{
+			debug.printf("parse_get_command_downlink_command parse failed\r\n");
+			result = 0;
+		}
+
+		else
+		{
+			const char* command = doc["command"]; // "SET_CONFIG"
+			const char* device_id = doc["device_id"]; // "1234567890"
+
+			if (strstr(device_id, read_device_info.device_id) != NULL)
+			{
+				result = 1;
+			}
+		}
+	}
+
+	else if ((1 == peripherals.lorawan_enable) && (lorawan_enable == read_device_info.communication_mode_enabled))
+	{
+		char device_id[16] = {'\0'};
+		sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+				processing_buffer[4], processing_buffer[5], processing_buffer[6], processing_buffer[7], processing_buffer[8]);
+
+		if (strstr(device_id, read_device_info.lorawan_device_eui) != NULL)
+		{
+			result = 1;
+		}
+	}
+
+	return result;
+}
+
+
+
+uint8_t downlink_t::parse_configure_apn_downlink_command(void)
+{
+	uint8_t result = 0;
+
+	if ((0 == peripherals.lorawan_enable) && (lorawan_enable != read_device_info.communication_mode_enabled))
+	{
+		DynamicJsonDocument doc(256);
+
+		DeserializationError error = deserializeJson(doc, processing_buffer);
+
+		if (error)
+		{
+			debug.printf("parse_configure_apn_downlink_command parse failed\r\n");
+			result = 0;
+		}
+
+		const char* command = doc["command"]; // "CONFIGURE_APN"
+		const char* device_id = doc["device_id"]; // "1234567890"
+		long epoch_time = doc["epoch_time"]; // 234567890
+		const char* apn = doc["apn"]; // "jionet"
+
+		if ((strstr(device_id, read_device_info.device_id) != NULL) && (0 != strlen(apn)) &&
+				(epoch_time > JANUARY_1_2025_EPOCH_TIME) && (epoch_time < JANUARY_1_2050_EPOCH_TIME))
+		{
+			rtc.set_time_in_utc(epoch_time);
+
+			sprintf(write_device_info.apn, "%s", apn);
+
+			result = 1;
+		}
+	}
+
+	else if ((1 == peripherals.lorawan_enable) && (lorawan_enable == read_device_info.communication_mode_enabled))
+	{
+		char device_id[16] = {'\0'};
+		sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+				processing_buffer[4], processing_buffer[5], processing_buffer[6], processing_buffer[7], processing_buffer[8]);
+
+		uint32_t epoch_time = (processing_buffer[9] << 24) | (processing_buffer[10] << 16) | (processing_buffer[11] << 8) |
+				processing_buffer[12];
+	}
+
+	return result;
+}
+
+
+uint8_t downlink_t::parse_reboot_downlink_command(void)
+{
+	uint8_t result = 0;
+
+	DynamicJsonDocument doc(128);
+
+	DeserializationError error = deserializeJson(doc, processing_buffer);
+
+	if (error)
+	{
+		debug.printf("parse_reboot_downlink_command parse failed\r\n");
+		result = 0;
+	}
+
+	else
+	{
+		const char* command = doc["command"]; // "REBOOT"
+		const char* device_id = doc["device_id"]; // "1234567890"
+
+		if (strstr(device_id, read_device_info.device_id) != NULL)
+		{
+			result = 1;
+		}
+	}
+
+	return result;
+}
+
+
+uint8_t downlink_t::parse_reset_to_factory_defaults_downlink_command(void)
+{
+	uint8_t result = 0;
+
+	DynamicJsonDocument doc(128);
+
+	DeserializationError error = deserializeJson(doc, processing_buffer);
+
+	if (error)
+	{
+		debug.printf("parse_reset_to_factory_defaults_command parse failed\r\n");
+		result = 0;
+	}
+
+	else
+	{
+		const char* command = doc["command"]; // "RESET_TO_FACTORY_DEFUALTS"
+		const char* device_id = doc["device_id"]; // "1234567890"
+
+		if (strstr(device_id, read_device_info.device_id) != NULL)
+		{
+			result = 1;
+		}
+	}
+
+	return result;
+}
+
+
+uint8_t downlink_t::parse_turn_off_edge_device_downlink_command(void)
+{
+	uint8_t result = 0;
+
+	DynamicJsonDocument doc(128);
+
+	DeserializationError error = deserializeJson(doc, processing_buffer);
+
+	if (error)
+	{
+		debug.printf("parse_turn_off_edge_device_command parse failed\r\n");
+		result = 0;
+	}
+
+	else
+	{
+		const char* command = doc["command"]; // "TURN_OFF_EDGE_DEVICE"
+		const char* device_id = doc["device_id"]; // "1234567890"
+
+		if (strstr(device_id, read_device_info.device_id) != NULL)
+		{
+			result = 1;
+		}
+	}
+
+	return result;
+}
+
+
+uint8_t downlink_t::parse_set_lorawan_config_downlink_command(void)
+{
+	uint8_t result = 0;
+
+	DynamicJsonDocument doc(1024);
+
+	DeserializationError error = deserializeJson(doc, processing_buffer);
+
+	if (error)
+	{
+		debug.printf("parse_set_lorawan_config_downlink_command parse failed\r\n");
+		result = 0;
+	}
+
+	else
+	{
+		const char* command = doc["command"]; // "SET_LORAWAN_CONFIG"
+		const char* device_id = doc["device_id"]; // "1234567890"
+		long epoch_time = doc["epoch_time"]; // 234567890
+		const char* lorawan_app_key = doc["lorawan_app_key"];
+		const char* lorawan_nwk_key = doc["lorawan_nwk_key"];
+		const char* lorawan_app_session_key = doc["lorawan_app_session_key"];
+		const char* lorawan_nwk_session_key = doc["lorawan_nwk_session_key"];
+		const char* lorawan_device_eui = doc["lorawan_device_eui"]; // "98,3A,DC,45,23,8E,89,A3"
+		const char* lorawan_join_eui = doc["lorawan_join_eui"]; // "01,01,01,01,01,01,01,01"
+		const char* lorawan_device_address = doc["lorawan_device_address"]; // "01,30,70,E5"
+
+
+		if ((strstr(device_id, read_device_info.device_id) != NULL) &&
+				(0 != strlen(lorawan_app_key)) && (0 != strlen(lorawan_nwk_key)) &&
+				(0 != strlen(lorawan_app_session_key)) && (0 != strlen(lorawan_nwk_session_key)) &&
+				(0 != strlen(lorawan_device_eui)) && (0 != strlen(lorawan_join_eui)) && (0 != strlen(lorawan_device_address)) &&
+				(epoch_time > JANUARY_1_2025_EPOCH_TIME) && (epoch_time < JANUARY_1_2050_EPOCH_TIME))
+		{
+			rtc.set_time_in_utc(epoch_time);
+
+			sprintf(write_device_info.lorawan_app_key, "%s", lorawan_app_key);
+			sprintf(write_device_info.lorawan_nwk_key, "%s", lorawan_nwk_key);
+			sprintf(write_device_info.lorawan_app_session_key, "%s", lorawan_app_session_key);
+			sprintf(write_device_info.lorawan_nwk_session_key, "%s", lorawan_nwk_session_key);
+			sprintf(write_device_info.lorawan_device_eui, "%s", lorawan_device_eui);
+			sprintf(write_device_info.lorawan_join_eui, "%s", lorawan_join_eui);
+			sprintf(write_device_info.lorawan_device_address, "%s", lorawan_device_address);
+
+			write_device_info.update();
+			osDelay(100);
+			read_device_info.get();
+
+			result = 1;
+		}
+	}
+
+	return result;
+}
+
+
+void downlink_t::process_received_downlink(void)
+{
+	uint8_t result = 0;
+
+	if ((strstr(processing_buffer, "SET_CONFIG") != NULL) || (SET_CONFIG_DOWNLINK_COMMAND_PACKET_START_BYTE == processing_buffer[0]))
+	{
+		debug.printf("received set config downlink\r\n");
+
+		result = parse_set_config_downlink_command();
+
+		if (1 == result)
+		{
+			next_message.set_config_ack = 1;
+		}
+	}
+
+	else if ((strstr(processing_buffer, "GET_CONFIG") != NULL) || (GET_CONFIG_DOWNLINK_COMMAND_PACKET_START_BYTE == processing_buffer[0]))
+	{
+		debug.printf("received get config downlink\r\n");
+
+		result = parse_get_config_downlink_command();
+
+		if (1 == result)
+		{
+			next_message.get_config_ack = 1;
+		}
+	}
+
+
+	else if ((strstr(processing_buffer, "CONFIGURE_APN") != NULL) || (CONFIGURE_APN_PACKET_START_BYTE == processing_buffer[0]))
+	{
+		debug.printf("received configure apn downlink\r\n");
+
+		result = parse_configure_apn_downlink_command();
+
+		if (1 == result)
+		{
+			write_device_info.update();
+
+			next_message.configure_apn_ack = 1;
+		}
+	}
+
+	else if (strstr(processing_buffer, "REBOOT") != NULL)
+	{
+		debug.printf("received reboot downlink\r\n");
+
+		result = parse_reboot_downlink_command();
+
+		if (1 == result)
+		{
+			next_message.reboot_ack = 1;
+		}
+	}
+
+	else if (strstr(processing_buffer, "RESET_TO_FACTORY_DEFAULTS") != NULL)
+	{
+		debug.printf("received reset to factory defaults downlink\r\n");
+
+		result = parse_reset_to_factory_defaults_downlink_command();
+
+		if (1 == result)
+		{
+			next_message.reset_to_factory_defaults_ack = 1;
+		}
+	}
+
+	else if (strstr(processing_buffer, "TURN_OFF_EDGE_DEVICE") != NULL)
+	{
+		debug.printf("received turn-off edge device downlink\r\n");
+
+		result = parse_turn_off_edge_device_downlink_command();
+
+		if (1 == result)
+		{
+			next_message.turn_off_edge_device_ack = 1;
+		}
+	}
+
+	else if (strstr(processing_buffer, "SET_LORAWAN_CONFIG") != NULL)
+	{
+		debug.printf("received set lorawan config downlink\r\n");
+
+		result = parse_set_lorawan_config_downlink_command();
+
+		if (1 == result)
+		{
+			next_message.set_lorawan_config_ack = 1;
+		}
+	}
+
+	next_message.update();
+}
+
+
+
+
+/* USER CODE BEGIN Header_downlink_thread_task */
+/**
+* @brief Function implementing the downlink_thread thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_downlink_thread_task */
+void downlink_thread_task(void const * argument)
+{
+  /* USER CODE BEGIN downlink_thread_task */
+  /* Infinite loop */
+  for(;;)
+  {
+	  if (1 == downlink_semaphore.acquire(1000))
+	  {
+		  downlink.process_received_downlink();
+	  }
+
+	  osDelay(1000);
+  }
+  /* USER CODE END downlink_thread_task */
+}

@@ -1,0 +1,52 @@
+/*
+ * ws2812.h
+ *
+ *  Created on: June 16, 2025
+ *      Author: Amogh MP
+ */
+
+#include "mutex_t.h"
+#include "includes.h"
+
+
+mutex_t debug_uart_mutex ((char *)"debug_uart_mutex");
+mutex_t rtc_mutex ((char *)"rtc_mutex");
+mutex_t eeprom_mutex ((char *)"eeprom_mutex");
+mutex_t wifi_print_mutex ((char *)"wifi_print_mutex");
+mutex_t nor_mutex ((char *)"nor_mutex");
+mutex_t cellular_uart_mutex ((char *)"cellular_uart_mutex");
+mutex_t cellular_mutex ((char *)"cellular_mutex");
+mutex_t adc_mutex ((char *)"adc_mutex");
+
+
+
+mutex_t::mutex_t(char * mutex_name)
+{
+	osMutexDef(myMutexID);
+	myMutexID = osMutexCreate(osMutex(myMutexID));
+}
+
+mutex_t::~mutex_t()
+{
+
+}
+
+
+uint8_t mutex_t::lock(uint32_t timeout)
+{
+	if(osMutexWait(myMutexID, timeout) == osOK)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+
+void mutex_t::unlock(void)
+{
+	osMutexRelease(myMutexID);
+}
+

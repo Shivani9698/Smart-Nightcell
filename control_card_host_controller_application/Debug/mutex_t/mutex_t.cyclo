@@ -1,0 +1,9 @@
+../mutex_t/mutex_t.cpp:25:1:mutex_t::mutex_t(char*)	1
+../mutex_t/mutex_t.cpp:31:1:mutex_t::~mutex_t()	1
+../mutex_t/mutex_t.cpp:31:1:virtual mutex_t::~mutex_t()	1
+../mutex_t/mutex_t.cpp:37:9:uint8_t mutex_t::lock(uint32_t)	2
+../mutex_t/mutex_t.cpp:50:6:void mutex_t::unlock()	1
+../mutex_t/mutex_t.cpp:53:1:void __static_initialization_and_destruction_0()	1
+../mutex_t/mutex_t.cpp:53:1:void __static_initialization_and_destruction_1()	1
+../mutex_t/mutex_t.cpp:53:1:cpp)	1
+../mutex_t/mutex_t.cpp:53:1:cpp)	1

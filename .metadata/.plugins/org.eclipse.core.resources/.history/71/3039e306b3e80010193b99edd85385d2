@@ -1,0 +1,201 @@
+/*
+ * lorawan.cpp
+ *
+ *  Created on: Aug 10, 2025
+ *      Author: Amogh MP
+ */
+
+
+
+
+#include "lorawan_stm32wl.h"
+#include "external_eeprom.h"
+#include "device_info.h"
+#include "peripherals_t.h"
+#include "ArduinoJson.h"
+#include "semaphore_t.h"
+
+
+
+extern UART_HandleTypeDef huart2;
+
+
+lorawan_params_t lorawan(&huart2, lorawan_uart_mutex, LORA_CHIP_RESET_GPIO_Port, LORA_CHIP_RESET_Pin);
+
+
+lorawan_params_t::lorawan_params_t(UART_HandleTypeDef * uart, mutex_t& m, GPIO_TypeDef *lora_chip_reset_port, uint16_t lora_chip_reset_pin_number) :
+	usart(uart, m), mutex(m), gpio(lora_chip_reset_port, lora_chip_reset_pin_number)
+{
+
+}
+
+
+lorawan_params_t::~lorawan_params_t()
+{
+
+}
+
+
+void lorawan_params_t::initialise(void)
+{
+	deinitialise();
+
+	osDelay(250);
+
+	on();
+	init();
+	register_rx_callback(lorawan_params_t::my_callback);
+	enable_interrupt();
+}
+
+
+void lorawan_params_t::deinitialise(void)
+{
+	deinit();
+	off();
+	unregister_rx_callback();
+}
+
+
+
+uint16_t lorawan_params_t::serialize_ready_packet(char * uplink_buffer, uint16_t size)
+{
+	DynamicJsonDocument doc(128);
+
+	doc["command"] = "READY";
+
+	serializeJson(doc, uplink_buffer, size);
+
+	uint16_t length = strlen(uplink_buffer);
+
+	return length;
+}
+
+
+
+void lorawan_params_t::process_lorawan_data(void)
+{
+	if (strstr((char *)data_rx_processing_buffer, "READY_ACK") != NULL)
+	{
+		ready_status = 1;
+
+		debug.printf("READY_ACK received from stm32wl\r\n");
+	}
+}
+
+
+
+void lorawan_thread_task(void const * argument)
+{
+  /* USER CODE BEGIN lorawan_thread_task */
+  /* Infinite loop */
+  for(;;)
+  {
+	  HAL_IWDG_Refresh(&hiwdg1);
+
+	  if ((lorawan_enable == read_device_info.communication_mode_enabled) && (1 == peripherals.power_on_all_peripherals))
+	  {
+		  if (1 == lorawan.reboot_required)
+		  {
+			  debug.printf("Max lorawan retry count exceeded......Rebooting now\r\n");
+
+			  lorawan.retry_counter = 0;
+
+			  lorawan.initialise();
+		  }
+
+
+		  else if ((0 == lorawan.ready_status) && (0 == lorawan.connection_status) && (0 == lorawan.time_status))
+		  {
+			  lorawan.serialize_ready_packet((char *)lorawan.data_tx_buffer, sizeof(lorawan.data_tx_buffer));
+
+			  debug.printf("stm tx data: %s\r\n", lorawan.data_tx_buffer);
+			  lorawan.printf("%s\r\n", lorawan.data_tx_buffer);
+
+			  osDelay(1000);
+
+			  if (lorawan.retry_counter >= MAX_LORAWAN_RETRY_COUNTER)
+			  {
+				  lorawan.reboot_required = 1;
+			  }
+		  }
+
+		  else if ((1 == lorawan.ready_status) && (0 == lorawan.connection_status) && (0 == lorawan.time_status))
+		  {
+
+		  }
+
+		  else if ((1 == lorawan.ready_status) && (1 == lorawan.connection_status) && (0 == lorawan.time_status))
+		  {
+
+		  }
+
+		  else if ((1 == lorawan.ready_status) && (1 == lorawan.connection_status) && (1 == lorawan.time_status))
+		  {
+			  peripherals.start_application = 1;
+		  }
+	  }
+
+	  osDelay(3000);
+  }
+  /* USER CODE END lorawan_thread_task */
+}
+
+
+void lorawan_processing_task(void const * argument)
+{
+  /* USER CODE BEGIN lorawan_processing_task */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1000);
+  }
+  /* USER CODE END lorawan_processing_task */
+}
+
+
+
+void lorawan_params_t::my_callback(UART_HandleTypeDef * uart)
+{
+	lorawan.rx_byte = lorawan.huart->Instance->RDR;
+
+	if(lorawan.rx_counter >= (MAX_LORAWAN_BUFFER_SIZE - 4))
+	{
+		lorawan.rx_counter = 0;
+	}
+
+//	if(lorawan.rx_byte == 0) // TODO: check if this is necessary because, 0 can also be a part of the payload which is in hex format
+//	{
+//
+//	}
+
+	else if(lorawan.rx_byte == '\n')
+	{
+		lorawan.data_rx_buffer[lorawan.rx_counter++] = lorawan.rx_byte;
+		lorawan.data_rx_buffer[lorawan.rx_counter++] = '\0';
+
+		if(lorawan.rx_counter > 6)
+		{
+			memset(lorawan.data_rx_processing_buffer, 0, sizeof(lorawan.data_rx_processing_buffer));
+			memcpy(lorawan.data_rx_processing_buffer, lorawan.data_rx_buffer, lorawan.rx_counter);
+
+			lorawan.rx_counter = 0;
+
+			lorawan_isr_semaphore.acquire(0);
+			lorawan_isr_semaphore.release();
+		}
+
+		else
+		{
+			lorawan.rx_counter = 0;
+		}
+
+	}
+
+	else
+	{
+		lorawan.data_rx_buffer[lorawan.rx_counter++] = lorawan.rx_byte;
+	}
+
+	HAL_UART_Receive_IT(lorawan.huart, (uint8_t *)&lorawan.usart_rx_byte , 1);
+}

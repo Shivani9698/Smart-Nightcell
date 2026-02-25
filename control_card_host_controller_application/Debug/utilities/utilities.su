@@ -1,0 +1,2 @@
+../utilities/utilities.cpp:15:6:void string_to_hex(const char*, uint8_t*, uint8_t)	40	static
+../utilities/utilities.cpp:42:9:uint8_t is_buffer_not_empty(const uint8_t*, uint16_t)	24	static

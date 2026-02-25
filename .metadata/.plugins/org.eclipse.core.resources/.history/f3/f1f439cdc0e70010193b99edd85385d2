@@ -1,0 +1,45 @@
+
+
+#ifndef ONE_WIRE_SENSOR_H_
+#define ONE_WIRE_SENSOR_H_
+
+
+#include "gpio.h"
+#include "main.h"
+#include "device_info.h"
+
+
+
+#if USE_ONEWIRE_DIGITAL_SENSOR
+
+
+class one_wire_sensor : public gpio
+{
+	private:
+		uint8_t Presence;
+		uint8_t Temp_byte1, Temp_byte2;
+		int16_t TEMP;
+		float Temperature;
+
+		void initialise(void);
+		void deinitialise(void);
+		void read_temperature(void);
+
+
+	public:
+		int16_t temperature;
+		uint16_t humidity;
+
+		one_wire_sensor(GPIO_TypeDef * gpio_port, uint16_t pin_number);
+		virtual ~one_wire_sensor();
+		void get_temperature_and_humidity(void);
+};
+
+extern one_wire_sensor one_wire;
+
+#endif
+
+
+extern TIM_HandleTypeDef htim17;
+
+#endif /* ONE_WIRE_SENSOR_H_ */

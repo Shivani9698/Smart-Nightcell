@@ -1,0 +1,72 @@
+/*
+ * lorawan.cpp
+ *
+ *  Created on: Aug 10, 2025
+ *      Author: Amogh MP
+ */
+
+
+
+
+#include "lorawan_stm32wl.h"
+#include "external_eeprom.h"
+
+
+
+extern UART_HandleTypeDef huart2;
+
+
+lorawan_params_t lorawan(&huart2, lorawan_uart_mutex, LORA_CHIP_RESET_GPIO_Port, LORA_CHIP_RESET_Pin);
+
+
+lorawan_params_t::lorawan_params_t(UART_HandleTypeDef * uart, mutex_t& m, GPIO_TypeDef *lora_chip_reset_port, uint16_t lora_chip_reset_pin_number) :
+	usart(uart, m), mutex(m), gpio(lora_chip_reset_port, lora_chip_reset_pin_number)
+{
+
+}
+
+
+lorawan_params_t::~lorawan_params_t()
+{
+
+}
+
+
+void lorawan_params_t::initialise(void)
+{
+	deinitialise();
+
+	osDelay(250);
+
+	on();
+	init();
+	register_rx_callback(lorawan_params_t::my_callback);
+	enable_interrupt();
+}
+
+
+void lorawan_params_t::deinitialise(void)
+{
+	deinit();
+	off();
+	unregister_rx_callback();
+}
+
+
+void lorawan_thread_task(void const * argument)
+{
+  /* USER CODE BEGIN lorawan_thread_task */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END lorawan_thread_task */
+}
+
+
+
+void lorawan_params_t::my_callback(UART_HandleTypeDef * uart)
+{
+
+}

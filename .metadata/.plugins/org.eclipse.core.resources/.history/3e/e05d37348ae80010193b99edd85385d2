@@ -1,0 +1,72 @@
+/*
+ * lorawan.h
+ *
+ *  Created on: Aug 10, 2025
+ *      Author: Amogh MP
+ */
+
+#ifndef LORAWAN_STM32WL_H_
+#define LORAWAN_STM32WL_H_
+
+
+
+#include "main.h"
+#include "includes.h"
+#include "usart_class.h"
+#include "gpio.h"
+#include "mutex_t.h"
+#include "radar_sensor.h"
+
+
+
+#define MAX_CREDENTIALS_TOKEN_LENGTH				64
+
+
+// TODO: don't change the buffer size, because in stm32wl application buffer size if is also 1024. If changed here, the same has to be updated in that application and vice-versa.
+#define MAX_LORAWAN_BUFFER_SIZE						1024
+
+
+#define MAX_LORAWAN_RETRY_COUNTER					5
+
+
+
+
+class lorawan_params_t : public usart, public gpio
+{
+	public:
+	mutex_t& mutex;
+
+
+	uint8_t retry_counter;
+
+	uint8_t reboot_required;
+	uint8_t ready_status;
+	uint8_t time_status;
+	uint8_t connection_status;
+
+
+	char data_buffer[MAX_LORAWAN_BUFFER_SIZE];
+	char data_processing_buffer[MAX_LORAWAN_BUFFER_SIZE];
+	uint8_t data_tx_buffer[MAX_LORAWAN_BUFFER_SIZE];
+
+	uint16_t rx_counter = 0;
+	uint8_t rx_byte = 0xFF;
+
+
+	lorawan_params_t(UART_HandleTypeDef * uart, mutex_t& m, GPIO_TypeDef *lora_chip_reset_port, uint16_t lora_chip_reset_pin_number);
+	virtual ~lorawan_params_t();
+
+	void initialise(void);
+	void deinitialise(void);
+
+
+	uint16_t serialize_ready_packet(char * uplink_buffer, uint16_t size);
+
+	static void my_callback(UART_HandleTypeDef * uart);
+
+};
+
+extern lorawan_params_t lorawan;
+
+
+#endif /* LORAWAN_STM32WL_H_ */

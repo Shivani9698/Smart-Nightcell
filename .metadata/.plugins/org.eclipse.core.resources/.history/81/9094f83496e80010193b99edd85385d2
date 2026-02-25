@@ -1,0 +1,144 @@
+/*
+ * external_eeprom.h
+ *
+ *  Created on: June 16, 2025
+ *      Author: Amogh MP
+ */
+
+#ifndef SRC_EXTERNAL_EEPROM_H_
+#define SRC_EXTERNAL_EEPROM_H_
+
+
+#include "main.h"
+#include "i2c.h"
+#include "includes.h"
+
+
+
+#define	FOUR_MILLION										4194304
+
+#define EEPROM_DEVICE_ADDRESS								0xAC
+#define EEPROM_MEMORY_SIZE 									(128 * 1024)
+#define EEPROM_PAGE_SIZE									256
+#define TOTAL_NUMBER_OF_PAGES								512
+
+
+
+
+#define	NEW_EEPROM_CHECK_BYTE								0xA0
+#define START_ADDRESS_OF_NEW_EEPROM							((TOTAL_NUMBER_OF_PAGES - 1) * 64)
+
+
+
+
+
+#define START_ADDRESS_OF_READ_COUNTER						0
+#define END_ADDRESS_OF_READ_COUNTER  						256
+
+#define START_ADDRESS_OF_WRITE_COUNTER						256
+#define END_ADDRESS_OF_WRITE_COUNTER  						512
+
+#define START_ADDRESS_OF_MESSAGE_COUNTER					512
+#define END_ADDRESS_OF_MESSAGE_COUNTER  					768
+
+
+#define START_ADDRESS_OF_READ_COUNTER_INDEX					768
+#define END_ADDRESS_OF_READ_COUNTER_INDEX 					772
+
+#define START_ADDRESS_OF_WRITE_COUNTER_INDEX				772
+#define END_ADDRESS_OF_WRITE_COUNTER_INDEX  				776
+
+#define START_ADDRESS_OF_MESSAGE_COUNTER_INDEX				776
+#define END_ADDRESS_OF_MESSAGE_COUNTER_INDEX  				780
+
+
+
+
+
+#define START_ADDRESS_OF_DEVICE_INFO						4096
+#define SIZE_OF_DEVICE_INFO									2048
+#define END_ADDRESS_OF_DEVICE_INFO							6144
+
+
+#define START_ADDRESS_OF_WIFI_CREDENTIALS					6144
+#define SIZE_OF_WIFI_CREDENTIALS							1024
+#define EDN_ADDRESS_OF_WIFI_CREDENTIALS						7168
+
+
+#define START_ADDRESS_OF_PERIPHERAL_CONFIG					7168
+#define SIZE_OF_PERIPHERAL_CONFIG							1024
+#define END_ADDRESS_OF_PERIPHERAL_CONFIG					8192
+
+
+#define START_ADDRESS_OF_NEXT_MESSAGE_TO_SEND				8192
+#define SIZE_OF_NEXT_MESSAGE_TO_SEND						512
+#define END_ADDRESS_OF_NEXT_MESSAGE_TO_SEND					8704
+
+
+
+class external_eeprom : public i2c
+{
+	public:
+		uint16_t device_address;
+
+		external_eeprom(I2C_HandleTypeDef * i2c_handler, uint16_t device_address);
+		virtual ~external_eeprom();
+
+		void erase_eeprom(void);
+
+		void write_byte(uint8_t value, uint16_t address);
+		uint8_t read_byte(uint16_t address);
+
+		void write_int(int value, uint16_t address);
+		uint32_t read_int(uint16_t address);
+
+		uint8_t write_structure( uint8_t * write_data, uint16_t address, uint16_t length);
+		uint8_t read_structure(uint8_t * read_values, uint16_t address, uint16_t length);
+
+
+
+		void storage_counter_write(uint32_t value, uint16_t index);
+		uint32_t storage_counter_read( uint16_t index);
+
+		void reader_counter_write(uint32_t value,  uint16_t index);
+		uint32_t reader_counter_read( uint16_t index);
+
+		uint32_t message_counter_read( uint16_t index);
+		void message_counter_write(uint32_t value, uint16_t index);
+
+
+
+		uint8_t store_device_info(uint8_t* write_data, uint16_t length);
+		uint8_t get_device_info(uint8_t* read_data, uint16_t length);
+
+
+		uint8_t store_wifi_credentials_info(uint8_t* write_data, uint16_t length);
+		uint8_t get_wifi_credentials_info(uint8_t* read_data, uint16_t length);
+
+
+		uint8_t store_peripheral_configuration_info(uint8_t* write_data, uint16_t length);
+		uint8_t get_peripheral_configuration_info(uint8_t* read_data, uint16_t length);
+
+
+		uint8_t store_next_message_to_send_info(uint8_t* write_data, uint16_t length);
+		uint8_t get_next_message_to_send_info(uint8_t* read_data, uint16_t length);
+};
+
+extern external_eeprom eeprom;
+
+
+
+extern uint32_t write_index;
+extern uint32_t write_counter;
+
+extern uint32_t read_index;
+extern uint32_t read_page_counter;
+
+extern uint32_t message_counter;
+extern uint32_t message_counter_index;
+
+
+extern uint32_t write_page_counter;
+
+#endif /* SRC_EXTERNAL_EEPROM_H_ */
+

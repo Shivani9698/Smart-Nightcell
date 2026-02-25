@@ -1,0 +1,36 @@
+/*
+ * semaphore_t.h
+ *
+ *  Created on: Jul 22, 2025
+ *      Author: Amogh MP
+ */
+
+#ifndef SRC_SEMAPHORE_T_H_
+#define SRC_SEMAPHORE_T_H_
+
+
+
+#include "includes.h"
+
+
+class semaphore_t
+{
+	public:
+
+	osSemaphoreId semaphore;
+	semaphore_t(char * semaphore_name);
+	virtual ~semaphore_t();
+
+	uint8_t acquire(uint32_t time_out);
+	uint8_t release(void);
+};
+
+
+extern semaphore_t wifi_isr_semaphore;
+extern semaphore_t cellular_isr_semaphore;
+extern semaphore_t downlink_semaphore;
+extern semaphore_t cellular_manual_data_process_semaphore;
+semaphore_t radar_sensor_data_processing_sempahore;
+
+
+#endif /* SRC_SEMAPHORE_T_H_ */

@@ -1,0 +1,412 @@
+/*
+ * uplink_management.cpp
+ *
+ *  Created on: Jul 27, 2025
+ *      Author: Amogh MP
+ */
+
+
+
+
+#include "uplink_management.h"
+#include "wifi.h"
+#include "device_info.h"
+#include "ArduinoJson.h"
+#include "external_eeprom.h"
+#include "realtimeclock.h"
+#include "peripherals_t.h"
+#include "cellular.h"
+
+
+
+extern reset_cause_t device_reset_reason;
+
+
+next_message_to_send_t next_message;
+
+
+
+
+next_message_to_send_t::next_message_to_send_t(void)
+{
+
+}
+
+next_message_to_send_t::~next_message_to_send_t(void)
+{
+
+}
+
+uint8_t next_message_to_send_t::load_default_values(void)
+{
+	memset(&next_message, 0, sizeof(next_message));
+
+	uint8_t res = update();
+
+	return res;
+}
+
+uint8_t next_message_to_send_t::update(void)
+{
+	uint8_t res = eeprom.store_next_message_to_send_info((uint8_t *)&next_message, sizeof(next_message));
+
+	return res;
+}
+
+void next_message_to_send_t::get(void)
+{
+	eeprom.get_next_message_to_send_info((uint8_t *)&next_message, sizeof(next_message));
+}
+
+
+
+
+uint16_t serialize_https_error_message(char * uplink_buffer, uint16_t size)
+{
+	DynamicJsonDocument doc(256);
+
+	doc["command"] = "HTTPS_ERROR_MESSAGE";
+	doc["device_id"] = read_device_info.device_id;
+	doc["epoch_time"] = rtc.get_time_in_utc();
+	doc["error_code"] = lte.https_error_code;
+	doc["error_message"] = lte.https_error_message_buffer;
+
+	serializeJson(doc, uplink_buffer, size);
+
+	uint16_t length = strlen(uplink_buffer);
+
+	return length;
+}
+
+
+
+uint16_t serialize_startup_packet(char * uplink_buffer, uint16_t size)
+{
+	DynamicJsonDocument doc(1024);
+
+	doc["command"] = "STARTUP_MESSAGE";
+	doc["device_id"] = read_device_info.device_id;
+	doc["reboot_reason"] = reset_cause_get_name(device_reset_reason);
+
+	if (1 == power_status)
+	{
+		doc["device_power_source"] = "mains";
+	}
+	else
+	{
+		doc["device_power_source"] = "battery";
+	}
+
+	doc["device_battery_percentage"] = present_battery_percentage;
+	doc["epoch_time"] = rtc.get_time_in_utc();
+	doc["sampling_frequency"] = read_device_info.data_sampling_frequency_in_sec;
+	doc["wifi_enabled"] = peripherals.wifi_enable;
+	doc["mac_id"] = read_device_info.device_id;
+	doc["connected_ap_ssid"] = read_device_info.ssid;
+	doc["connected_ap_password"] = read_device_info.password;
+	doc["ip_address"] = read_device_info.ap_static_ip;
+	doc["cellular_enabled"] = peripherals.cellular_enable;
+	doc["imei"] = read_device_info.sim_imei_number;
+	doc["ccid"] = read_device_info.sim_ccid_number;
+	doc["signal_strength"] = lte.received_signal_power;
+	doc["lorawan_enabled"] = peripherals.lorawan_enable;
+	doc["device_eui"] = read_device_info.lorawan_device_eui;
+	doc["join_eui"] = read_device_info.lorawan_join_eui;
+	doc["gps_enabled"] = peripherals.gps_enable;
+	doc["lbs_enabled"] = peripherals.lbs_enable;
+	doc["hardware_version"] = read_device_info.hw_ver;
+	doc["firmware_version"] = read_device_info.fw_ver;
+	doc["reserved_1"] = "reserved_1_value";
+	doc["reserved_2"] = "reserved_2_value";
+	doc["reserved_3"] = "reserved_3_value";
+
+	serializeJson(doc, uplink_buffer, size);
+
+	uint16_t length = strlen(uplink_buffer);
+
+	return length;
+}
+
+
+uint16_t serialize_health_packet(char * uplink_buffer, uint16_t size)
+{
+	DynamicJsonDocument doc(1024);
+
+	doc["command"] = "HEALTH_MESSAGE";
+	doc["device_id"] = read_device_info.device_id;
+	doc["device_start_time"] = read_device_info.device_start_time;
+
+	if (1 == power_status)
+	{
+		doc["device_power_source"] = "mains";
+	}
+	else
+	{
+		doc["device_power_source"] = "battery";
+	}
+
+	doc["device_battery_percentage"] = present_battery_percentage;
+	doc["epoch_time"] = rtc.get_time_in_utc();
+	doc["sampling_frequency"] = read_device_info.data_sampling_frequency_in_sec;
+	doc["wifi_enabled"] = peripherals.wifi_enable;
+	doc["mac_id"] = read_device_info.device_id;
+	doc["connected_ap_ssid"] = read_device_info.ssid;
+	doc["connected_ap_password"] = read_device_info.password;
+	doc["ip_address"] = read_device_info.ap_static_ip;
+	doc["cellular_enabled"] = peripherals.cellular_enable;
+	doc["imei"] = read_device_info.sim_imei_number;
+	doc["ccid"] = read_device_info.sim_ccid_number;
+	doc["signal_strength"] = lte.received_signal_power;
+	doc["lorawan_enabled"] = peripherals.lorawan_enable;
+	doc["device_eui"] = read_device_info.lorawan_device_eui;
+	doc["join_eui"] = read_device_info.lorawan_join_eui;
+	doc["gps_enabled"] = peripherals.gps_enable;
+	doc["lbs_enabled"] = peripherals.lbs_enable;
+	doc["hardware_version"] = read_device_info.hw_ver;
+	doc["firmware_version"] = read_device_info.fw_ver;
+	doc["reserved_1"] = "reserved_1_value";
+	doc["reserved_2"] = "reserved_2_value";
+	doc["reserved_3"] = "reserved_3_value";
+
+	serializeJson(doc, uplink_buffer, size);
+
+	uint16_t length = strlen(uplink_buffer);
+
+	return length;
+}
+
+
+uint16_t serialize_set_config_ack_packet(char * uplink_buffer, uint16_t size)
+{
+	DynamicJsonDocument doc(512);
+
+	doc["command"] = "SET_CONFIG_ACK";
+	doc["device_id"] = read_device_info.device_id;
+	doc["epoch_time"] = rtc.get_time_in_utc();
+	doc["sampling_frequency"] = read_device_info.data_sampling_frequency_in_sec;
+	doc["max_tank_capacity"] = read_device_info.max_tank_capacity_in_litres;
+	doc["tank_length"] = read_device_info.tank_length;
+	doc["tank_width"] = read_device_info.tank_width;
+	doc["tank_height"] = read_device_info.tank_height;
+	doc["wifi_enabled"] = peripherals.wifi_enable;
+	doc["cellular_enabled"] = peripherals.cellular_enable;
+	doc["lorawan_enabled"] = peripherals.lorawan_enable;
+	doc["gps_enabled"] = peripherals.gps_enable;
+	doc["lbs_enabled"] = peripherals.lbs_enable;
+
+	serializeJson(doc, uplink_buffer, size);
+
+	uint16_t length = strlen(uplink_buffer);
+
+	return length;
+}
+
+
+uint16_t serialize_get_config_ack_packet(char * uplink_buffer, uint16_t size)
+{
+	DynamicJsonDocument doc(512);
+
+	doc["command"] = "GET_CONFIG_ACK";
+	doc["device_id"] = read_device_info.device_id;
+	doc["epoch_time"] = rtc.get_time_in_utc();
+	doc["sampling_frequency"] = read_device_info.data_sampling_frequency_in_sec;
+	doc["max_tank_capacity"] = read_device_info.max_tank_capacity_in_litres;
+	doc["tank_length"] = read_device_info.tank_length;
+	doc["tank_width"] = read_device_info.tank_width;
+	doc["tank_height"] = read_device_info.tank_height;
+	doc["wifi_enabled"] = peripherals.wifi_enable;
+	doc["cellular_enabled"] = peripherals.cellular_enable;
+	doc["lorawan_enabled"] = peripherals.lorawan_enable;
+	doc["gps_enabled"] = peripherals.gps_enable;
+	doc["lbs_enabled"] = peripherals.lbs_enable;
+
+	serializeJson(doc, uplink_buffer, size);
+
+	uint16_t length = strlen(uplink_buffer);
+
+	return length;
+}
+
+
+
+uint16_t serialize_configure_apn_ack_packet(char * uplink_buffer, uint16_t size)
+{
+	DynamicJsonDocument doc(256);
+
+	doc["command"] = "CONFIGURE_APN_ACK";
+	doc["device_id"] = read_device_info.device_id;
+	doc["epoch_time"] = rtc.get_time_in_utc();
+	doc["apn"] = write_device_info.apn;
+
+	serializeJson(doc, uplink_buffer, size);
+
+	uint16_t length = strlen(uplink_buffer);
+
+	return length;
+}
+
+
+
+uint16_t serialize_reboot_ack_packet(char * uplink_buffer, uint16_t size)
+{
+	DynamicJsonDocument doc(128);
+
+	doc["command"] = "REBOOT_ACK";
+	doc["device_id"] = read_device_info.device_id;
+
+	serializeJson(doc, uplink_buffer, size);
+
+	uint16_t length = strlen(uplink_buffer);
+
+	return length;
+}
+
+
+uint16_t serialize_reset_to_factory_defaults_ack_packet(char * uplink_buffer, uint16_t size)
+{
+	DynamicJsonDocument doc(128);
+
+	doc["command"] = "RESET_TO_FACTORY_DEFAULTS_ACK";
+	doc["device_id"] = read_device_info.device_id;
+
+	serializeJson(doc, uplink_buffer, size);
+
+	uint16_t length = strlen(uplink_buffer);
+
+	return length;
+}
+
+
+uint16_t serialize_turn_off_edge_device_ack_packet(char * uplink_buffer, uint16_t size)
+{
+	DynamicJsonDocument doc(128);
+
+	doc["command"] = "TURN_OFF_EDGE_DEVICE_ACK";
+	doc["device_id"] = read_device_info.device_id;
+
+	serializeJson(doc, uplink_buffer, size);
+
+	uint16_t length = strlen(uplink_buffer);
+
+	return length;
+}
+
+
+uint16_t serialize_water_tank_data_payload_packet(char * uplink_buffer, uint16_t size)
+{
+	if (0 == peripherals.lorawan_enable)
+	{
+		DynamicJsonDocument doc(256);
+
+		doc["command"] = "DATA_PAYLOAD";
+		doc["device_id"] = water_tank_read_data.device_id;
+		doc["device_power_source"] = water_tank_read_data.device_power_source;// "mains";
+		doc["device_battery_percentage"] = water_tank_read_data.device_battery_percentage;
+		doc["sample_packet_number"] = water_tank_read_data.packet_number;
+		doc["epoch_time"] = water_tank_read_data.sample_epoch_time;
+		doc["sampling_frequency"] = read_device_info.data_sampling_frequency_in_sec;
+		doc["water_level"] = water_tank_read_data.water_level_in_percentage;
+
+		serializeJson(doc, uplink_buffer, size);
+
+		uint16_t length = strlen(uplink_buffer);
+	}
+	else
+	{
+
+	}
+
+	return length;
+}
+
+
+
+uint16_t serialize_set_lorawan_config_ack_packet(char * uplink_buffer, uint16_t size)
+{
+	DynamicJsonDocument doc(1024);
+
+
+	doc["command"] = "SET_LORAWAN_CONFIG_ACK";
+	doc["device_id"] = read_device_info.device_id;
+	doc["epoch_time"] = rtc.get_time_in_utc();
+	doc["lorawan_app_key"] = read_device_info.lorawan_app_key;
+	doc["lorawan_nwk_key"] = read_device_info.lorawan_nwk_key;
+	doc["lorawan_app_session_key"] = read_device_info.lorawan_app_session_key;
+	doc["lorawan_nwk_session_key"] = read_device_info.lorawan_nwk_session_key;
+	doc["lorawan_device_eui"] = read_device_info.lorawan_device_eui;
+	doc["lorawan_join_eui"] = read_device_info.lorawan_join_eui;
+	doc["lorawan_device_address"] = read_device_info.lorawan_device_address;
+
+	serializeJson(doc, uplink_buffer, size);
+
+	uint16_t length = strlen(uplink_buffer);
+
+	return length;
+}
+
+
+
+
+uint16_t check_if_any_uplink_to_be_published(char * uplink_buffer, uint16_t size)
+{
+	uint16_t length = 0;
+
+	if (1 == next_message.https_error_message)
+	{
+		length = serialize_https_error_message(uplink_buffer, size);
+	}
+
+	else if (1 == next_message.start_up)
+	{
+		length = serialize_startup_packet(uplink_buffer, size);
+	}
+
+	else if (1 == next_message.health)
+	{
+		length = serialize_health_packet(uplink_buffer, size);
+	}
+
+	else if (1 == next_message.set_config_ack)
+	{
+		length = serialize_set_config_ack_packet(uplink_buffer, size);
+	}
+
+	else if (1 == next_message.get_config_ack)
+	{
+		length = serialize_get_config_ack_packet(uplink_buffer, size);
+	}
+
+	else if (1 == next_message.configure_apn_ack)
+	{
+		length = serialize_configure_apn_ack_packet(uplink_buffer, size);
+	}
+
+	else if (1 == next_message.reboot_ack)
+	{
+		length = serialize_reboot_ack_packet(uplink_buffer, size);
+	}
+
+	else if (1 == next_message.reset_to_factory_defaults_ack)
+	{
+		length = serialize_reset_to_factory_defaults_ack_packet(uplink_buffer, size);
+	}
+
+	else if (1 == next_message.turn_off_edge_device_ack)
+	{
+		length = serialize_turn_off_edge_device_ack_packet(uplink_buffer, size);
+	}
+
+	else if (1 == next_message.set_lorawan_config_ack)
+	{
+		length = serialize_set_lorawan_config_ack_packet(uplink_buffer, size);
+	}
+
+
+//	if (length > 0)
+//	{
+//		debug.printf("stm tx data: %s\r\n", wifi.uplink_message_buffer);
+//		wifi.printf(wifi.uplink_message_buffer);
+//	}
+
+	return length;
+}

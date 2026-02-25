@@ -1,0 +1,579 @@
+/*
+ * norflash.cpp
+ *
+ *  Created on: June 16, 2025
+ *      Author: Amogh MP
+ */
+
+#include "norflash.h"
+#include "usart_class.h"
+#include "mutex_t.h"
+#include "external_eeprom.h"
+
+
+extern SPI_HandleTypeDef hspi1;
+
+
+
+
+uint32_t sector = 0;
+uint32_t page = 0;
+uint32_t address = 0;
+
+
+char temp_bytes[256] = {'\0'};
+
+char buggy_cart_write_data_buffer[WRITE_SIZE] = "";
+char buggy_cart_read_data_buffer[WRITE_SIZE] = "";
+
+
+nor_flash nor(&hspi1, SPI_CHIP_SELECT_GPIO_Port, SPI_CHIP_SELECT_Pin);
+
+
+
+nor_flash::nor_flash(SPI_HandleTypeDef * spi_handle, GPIO_TypeDef * gpiox, uint16_t gpio_pin_number): spi(spi_handle), gpio(gpiox, gpio_pin_number)
+{
+	// TODO Auto-generated constructor stub
+}
+
+
+nor_flash::~nor_flash()
+{
+	// TODO Auto-generated destructor stub
+}
+
+
+void nor_flash::nor_transmit_byte(uint8_t data)
+{
+  this->spi_transmit(&data, 1);
+}
+
+
+uint8_t nor_flash::nor_write_byte(uint8_t data)
+{
+	uint8_t result;
+
+	result = this->spi_transmit_receive_byte(data);
+
+	return  result;
+}
+
+
+uint8_t nor_flash::nor_write_bytes(char * send_data, uint16_t length)
+{
+	uint8_t result;
+
+	result = this->spi_transmit_bytes((uint8_t *)send_data,length);
+
+	return  result;
+}
+
+
+uint8_t nor_flash::nor_write_read_bytes(char * send_data, char * read_data, uint16_t length)
+{
+	uint8_t result;
+
+	result = this->spi_transmit_receive_bytes((uint8_t *)send_data, (uint8_t *)read_data, length);
+
+	return  result;
+}
+
+
+void nor_flash::chip_enable(void)
+{
+	this->off();
+}
+
+
+void nor_flash::chip_disable(void)
+{
+	this->on();
+}
+
+
+void nor_flash::write_enable(void)
+{
+	chip_enable();
+	nor_write_byte(FLASH_INS_WREN);
+	chip_disable();
+}
+
+void nor_flash::write_disable(void)
+{
+	chip_enable();
+	nor_write_byte(FLASH_INS_WRDI);
+	chip_disable();
+}
+
+
+uint32_t nor_flash::read_id(void)
+{
+	uint32_t read_id = 0;
+	uint8_t id[3];
+
+	chip_enable();
+
+	nor_write_byte(FLASH_INS_RDID);
+
+	id[0] = nor_write_byte(DUMMY_BYTE);
+	id[1] = nor_write_byte(DUMMY_BYTE);
+	id[2] = nor_write_byte(DUMMY_BYTE);
+
+	chip_disable();
+
+	read_id = (uint32_t )((uint32_t )(id[0] << 16) | (uint32_t )(id[1] << 8) | (uint32_t )id[2]);
+
+	return read_id;
+}
+
+
+void nor_flash::write_register(uint8_t register_address, uint8_t reg_value)
+{
+	write_enable();
+	chip_enable();
+
+	nor_write_byte(register_address);
+	nor_write_byte(reg_value);
+
+	chip_disable();
+	write_disable();
+
+	osDelay(WAIT_TIME);
+}
+
+
+void nor_flash::clear_register(uint8_t reg_address)
+{
+	write_enable();
+	chip_enable();
+
+	nor_write_byte(reg_address);
+
+	chip_disable();
+	write_disable();
+
+	osDelay(WAIT_TIME);
+}
+
+
+uint8_t  nor_flash::read_register(uint8_t register_address)
+{
+	int counter = 0;
+	uint8_t value;
+
+	chip_enable();
+
+	nor_write_byte(register_address);
+	value = nor_write_byte(DUMMY_BYTE);
+
+	chip_disable();
+
+	while(counter < 100000)
+	{
+		counter++;
+	}
+
+	return value;
+}
+
+
+uint16_t nor_flash::read_novolatile_read_register(uint8_t register_address)
+{
+	uint16_t value;
+	uint8_t temp[2] = {'\0'};
+
+	chip_enable();
+
+	nor_write_byte(register_address);
+	temp[0] = nor_write_byte(DUMMY_BYTE);
+	temp[1] = nor_write_byte(DUMMY_BYTE);
+
+	value = (uint16_t )(temp[0] << 8) |(uint16_t ) temp[1];
+
+	chip_disable();
+
+	debug.printf("Register : %X Value %X\r\n", register_address, value);
+	osDelay(10);
+
+	return value;
+}
+
+
+void nor_flash::wait_for_oip_to_clear(void)
+{
+	uint8_t value = 0xFF;
+
+	do
+	{
+		value = read_register(FLASH_INS_RDSR);
+
+	}while((value & 0x01) == 0x01);
+}
+
+
+void nor_flash::reset(void)
+{
+	chip_enable();
+
+	nor_write_byte(FLASH_INS_REN);
+
+	chip_disable();
+
+	wait_for_oip_to_clear();
+
+	chip_enable();
+
+	nor_write_byte(FLASH_INS_REN);
+
+	chip_disable();
+
+	wait_for_oip_to_clear();
+}
+
+
+void nor_flash::unlock_all_sectors(void)
+{
+	write_register(FLASH_INS_WRSR, 0);
+}
+
+
+void nor_flash::bulk_erase(void)
+{
+	uint8_t value = 0xFF;
+
+	write_enable();
+
+	do
+	{
+		osDelay(1);
+		value = read_register(FLASH_INS_RDSR);
+
+	}while(( value & 0x02) != 0x02);
+
+	chip_enable();
+
+	nor_write_byte(FLASH_INS_BE);
+
+	chip_disable();
+	wait_for_oip_to_clear();
+
+	write_disable();
+}
+
+
+void nor_flash::sector_erase(uint32_t sector_address)
+{
+	write_enable();
+	wait_for_oip_to_clear();
+
+	chip_enable();
+
+	nor_write_byte(FLASH_INS_SE4BYTE);
+	nor_write_byte((sector_address & ADDRESS_BMASK3) >> 24);
+	nor_write_byte((sector_address & ADDRESS_BMASK2) >> 16);
+	nor_write_byte((sector_address & ADDRESS_BMASK1) >> 8);
+	nor_write_byte(sector_address & ADDRESS_BMASK0);
+
+	chip_disable();
+	wait_for_oip_to_clear();
+	write_disable();
+}
+
+
+void nor_flash::page_write(uint32_t page_address, char * write_data, uint16_t length)
+{
+	write_enable();
+
+	while((read_register(FLASH_INS_RDSR) & 0x02) != 0x02);
+
+	chip_enable();
+
+	nor_write_byte(FLASH_INS_PP4BYTE);
+	nor_write_byte((page_address & ADDRESS_BMASK3) >> 24);
+	nor_write_byte((page_address & ADDRESS_BMASK2) >> 16);
+	nor_write_byte((page_address & ADDRESS_BMASK1) >> 8);
+	nor_write_byte(page_address & ADDRESS_BMASK0);
+
+	nor_write_bytes(write_data, length);
+
+	//osDelay(10);// This is important dont change
+	chip_disable();
+	//osDelay(1);
+	wait_for_oip_to_clear();
+	//osDelay(10);
+
+	write_disable();
+	//debug.printf("Page Write End \r\n");
+	//osDelay(5);
+}
+
+
+void nor_flash::page_read(uint32_t page_address, char * read_data, uint16_t length)
+{
+	//debug.printf("Page Read Begin \r\n");
+	//chip_enable();
+	wait_for_oip_to_clear();
+	//chip_disable();
+	//debug.printf("Page Read Begin \r\n");
+	chip_enable();
+	//wait_for_oip_to_clear();
+	nor_write_byte(FLASH_INS_READ4BYTE);
+	nor_write_byte((page_address & ADDRESS_BMASK3) >> 24);
+	nor_write_byte((page_address & ADDRESS_BMASK2) >> 16);
+	nor_write_byte((page_address & ADDRESS_BMASK1) >> 8);
+	nor_write_byte(page_address & ADDRESS_BMASK0);
+//	nor_write_byte(DUMMY_BYTE);
+//	nor_write_byte(DUMMY_BYTE);
+
+	//nor_write_read_byte(DUMMY_BYTE, read_data, length);
+
+	for(int i = 0 ; i < length ; i++)
+	{
+		read_data[i] = nor_write_byte(DUMMY_BYTE);
+	}
+
+	chip_disable();
+
+//	//for(int i = 0 ; i < length ; i++)
+//	{
+//		debug.printf("%s \r\n", read_data);
+//	}
+	//osDelay(10);
+	wait_for_oip_to_clear();
+	//osDelay(10);
+
+	//debug.printf("Page Read End \r\n");
+}
+
+
+void nor_flash::initialize_nor_flash(void)
+{
+	int count  = 0;
+
+	osDelay(5);
+	write_enable();
+	chip_enable();
+	nor_write_byte(FLASH_INS_EN4BYTEADDR);
+	chip_disable();
+	chip_enable();
+	nor_write_byte(FLASH_INS_WRNVCR);
+	nor_write_byte(0xFF);
+	nor_write_byte(0xFE);
+
+	chip_disable();
+	osDelay(10);
+	reset();
+	osDelay(2000);
+
+	do
+	{
+//		chip_enable();
+//		nor_write_byte(FLASH_INS_WRNVCR);
+//		nor_write_byte(0xFF);
+//		nor_write_byte(0xFE);
+//		chip_disable();
+
+		count++;
+		osDelay(10);
+
+	}while((read_register((FLASH_INS_RDNVCR) & 0x01) != 0) && (count < 5));
+
+	write_disable();
+}
+
+
+uint16_t nor_flash::read_non_volatile_config_register(void)
+{
+	uint8_t temp[2];
+	uint16_t value;
+
+	chip_enable();
+
+	nor_write_byte(FLASH_INS_RDNVCR);
+	temp[0] = nor_write_byte(DUMMY_BYTE);
+	temp[1] = nor_write_byte(DUMMY_BYTE);
+
+	chip_disable();
+
+	value = (temp[0] << 8) | temp[1];
+	debug.printf("Non Volatile Config Register: %x\r\n", value);
+
+	return value;
+}
+
+
+uint8_t nor_flash::read_volatile_config_register(void)
+{
+	uint8_t value;
+
+	chip_enable();
+
+	nor_write_byte(FLASH_INS_RDVCR);
+	value = nor_write_byte(DUMMY_BYTE);
+
+	debug.printf("Volatile Config Register: %x\r\n", value);
+	chip_disable();
+
+	return value;
+}
+
+
+uint8_t nor_flash::read_enhanced_volatile_config_register(void)
+{
+	uint8_t value;
+
+	chip_enable();
+
+	nor_write_byte(FLASH_INS_RDVECR);
+	value = nor_write_byte(DUMMY_BYTE);
+
+	debug.printf("Enhanced Volatile Config Register: %x\r\n", value);
+	chip_disable();
+
+	return value;
+}
+
+
+uint8_t nor_flash::read_flag_register(void)
+{
+	uint8_t value;
+
+	chip_enable();
+
+	nor_write_byte(FLASH_INS_RDFSR);
+	value = nor_write_byte(DUMMY_BYTE);
+
+	debug.printf("Flag Register: %x\r\n", value);
+	chip_disable();
+
+	return value;
+}
+
+
+uint8_t nor_flash::read_global_freeze_bit(void)
+{
+	uint8_t value;
+
+	chip_enable();
+
+	nor_write_byte(FLASH_PLBRD);
+	value = nor_write_byte(DUMMY_BYTE);
+
+	debug.printf("Global Freeze Bit: %x\r\n", value);
+	chip_disable();
+
+	return value;
+}
+
+
+void nor_flash::erase_sub_subsector(uint32_t address)
+{
+	write_enable();
+	chip_enable();
+
+	nor_write_byte(FLASH_INS_SSE);
+	nor_write_byte((address & ADDRESS_BMASK3) >> 24);
+	nor_write_byte((address & ADDRESS_BMASK2) >> 16);
+	nor_write_byte((address & ADDRESS_BMASK1) >> 8);
+	nor_write_byte(address & ADDRESS_BMASK0);
+
+	wait_for_oip_to_clear();
+
+	chip_disable();
+	write_disable();
+
+	osDelay(2000);
+}
+
+
+uint8_t nor_flash::save_data_packets(char* data_buffer)
+{
+	uint8_t res = 0;
+
+	write_index = eeprom.read_int(START_ADDRESS_OF_WRITE_COUNTER_INDEX);
+	write_page_counter = eeprom.storage_counter_read(write_index);
+
+	sector = (write_page_counter / MAX_SAMPLES_IN_A_SECTOR) %  NUMBER_OF_SECTORS;
+	page = write_page_counter % MAX_SAMPLES_IN_A_SECTOR;
+	address = (sector * SECTOR_SIZE) + (page * WRITE_SIZE);
+
+	if(0 == (write_page_counter % MAX_SAMPLES_IN_A_SECTOR))
+	{
+//		eeprom.sector_write_byte(0, sector); // TODO: check if this is required as only 1 sector is availble in nor flash. Cross-check to be done
+
+		if (1 == nor_mutex.lock(1000))
+		{
+			__disable_irq();
+			nor.sector_erase(address);
+			__enable_irq();
+
+			nor_mutex.unlock();
+		}
+	}
+
+	if (1 == nor_mutex.lock(1000))
+	{
+		__disable_irq();
+
+		nor.page_write(address , &data_buffer[0], WRITE_SIZE);
+
+		__enable_irq();
+
+		nor_mutex.unlock();
+	}
+
+//	if(0 == (write_page_counter % MAX_SAMPLES_PER_SECTOR)) // TODO: check if this is required as only 1 sector is availble in nor flash. Cross-check to be done
+//	{
+//		eeprom.sector_write_byte(1, sector);
+//	}
+
+	write_page_counter++;
+
+	if (0 == (write_page_counter % FOUR_MILLION))
+	{
+		write_index = write_page_counter / FOUR_MILLION;
+
+		eeprom.write_int(write_index , START_ADDRESS_OF_WRITE_COUNTER_INDEX);
+	}
+
+	eeprom.storage_counter_write(write_page_counter, write_index);
+
+
+	return res;
+}
+
+
+uint8_t nor_flash::read_data_packets(char* buffer)
+{
+	uint8_t res = 0;
+
+	read_index = eeprom.read_int(START_ADDRESS_OF_READ_COUNTER_INDEX);
+	read_page_counter = eeprom.reader_counter_read(read_index);
+
+	sector = (read_page_counter / MAX_SAMPLES_IN_A_SECTOR) %  NUMBER_OF_SECTORS;
+	page = read_page_counter % MAX_SAMPLES_IN_A_SECTOR;
+	address = (sector * SECTOR_SIZE) + (page * WRITE_SIZE);
+
+	if (1 == nor_mutex.lock(1000))
+	{
+		__disable_irq();
+
+		nor.page_read(address, buffer, WRITE_SIZE);
+
+		__enable_irq();
+
+		nor_mutex.unlock();
+	}
+
+
+
+//	read_page_counter++;
+//
+//	if(read_page_counter % FOUR_MILLION == 0)
+//	{
+//		read_index = read_page_counter / FOUR_MILLION;
+//
+//		eeprom.write_int(read_index , START_ADDRESS_OF_READ_COUNTER_INDEX);
+//	}
+//	eeprom.reader_counter_write(read_page_counter, read_index);
+}

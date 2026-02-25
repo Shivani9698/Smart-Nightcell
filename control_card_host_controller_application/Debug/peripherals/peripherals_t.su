@@ -1,0 +1,11 @@
+../peripherals/peripherals_t.cpp:18:1:peripherals_t::peripherals_t()	16	static
+../peripherals/peripherals_t.cpp:24:1:peripherals_t::~peripherals_t()	16	static
+../peripherals/peripherals_t.cpp:24:1:virtual peripherals_t::~peripherals_t()	16	static
+../peripherals/peripherals_t.cpp:30:6:void peripherals_t::load_default_values()	16	static
+../peripherals/peripherals_t.cpp:46:6:void peripherals_t::store_to_eeprom()	16	static
+../peripherals/peripherals_t.cpp:52:6:void peripherals_t::read_from_eeprom()	16	static
+../peripherals/peripherals_t.cpp:58:6:void peripherals_t::print()	16	static
+../peripherals/peripherals_t.cpp:66:1:void __static_initialization_and_destruction_0()	8	static
+../peripherals/peripherals_t.cpp:66:1:void __static_initialization_and_destruction_1()	8	static
+../peripherals/peripherals_t.cpp:66:1:cpp)	8	static
+../peripherals/peripherals_t.cpp:66:1:cpp)	8	static

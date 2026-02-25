@@ -1,0 +1,16 @@
+../gpio/gpio.cpp:27:1:gpio::gpio()	16	static
+../gpio/gpio.cpp:32:1:gpio::gpio(GPIO_TypeDef*, uint16_t)	24	static
+../gpio/gpio.cpp:38:1:gpio::~gpio()	16	static
+../gpio/gpio.cpp:38:1:virtual gpio::~gpio()	16	static
+../gpio/gpio.cpp:42:6:void gpio::on()	16	static
+../gpio/gpio.cpp:47:6:void gpio::off()	16	static
+../gpio/gpio.cpp:52:6:void gpio::toggle()	16	static
+../gpio/gpio.cpp:57:9:uint8_t gpio::read()	16	static
+../gpio/gpio.cpp:62:6:void gpio::on(GPIO_TypeDef*, uint16_t)	24	static
+../gpio/gpio.cpp:67:6:void gpio::off(GPIO_TypeDef*, uint16_t)	24	static
+../gpio/gpio.cpp:72:6:void gpio::toggle(GPIO_TypeDef*, uint16_t)	24	static
+../gpio/gpio.cpp:77:9:uint8_t gpio::read(GPIO_TypeDef*, uint16_t)	24	static
+../gpio/gpio.cpp:80:1:void __static_initialization_and_destruction_0()	8	static
+../gpio/gpio.cpp:80:1:void __static_initialization_and_destruction_1()	8	static
+../gpio/gpio.cpp:80:1:cpp)	8	static
+../gpio/gpio.cpp:80:1:cpp)	8	static

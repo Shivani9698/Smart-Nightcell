@@ -1,0 +1,293 @@
+/*
+ * cellular.h
+ *
+ *  Created on: Oct 1, 2025
+ *      Author: Amogh MP
+ */
+
+#ifndef CELLULAR_H_
+#define CELLULAR_H_
+
+
+
+#include "main.h"
+#include "includes.h"
+#include "mutex_t.h"
+#include "wifi.h"
+#include "usart_class.h"
+#include "gpio.h"
+
+
+
+
+#define RESET_PULSE_DELAY							150
+#define POST_RESET_START_UP_DELAY					6000
+
+#define POWER_KEY_ON_PULSE_DELAY					2100
+#define POST_POWER_KEY_START_UP_DELAY				6000
+
+
+#define POWER_KEY_OFF_PULSE_DELAY					3200
+#define POST_POWER_KEY_SHUT_DOWN_DELAY				32000
+
+
+
+#define NUMBER_OF_NETWORK_REGISTRATION_RETRIES      10
+#define NUMBER_OF_TIME_SYNC_RETRIES					5
+#define NUMBER_OF_MQTT_OPEN_RETRIES					3
+#define MQTT_OPEN_RETRIES							3
+
+
+
+#define MAX_NEIGHBOUR_CELLS 						5
+#define MIN_NEIGHBOUR_CELLS 						2
+
+
+#define MAX_NUMBER_OF_GNSS_GPS_FAILED_ATTEMPTS		30
+
+
+
+extern osThreadId cellular_procesHandle;
+extern osThreadId cellular_threadHandle;
+
+
+
+typedef struct mqtt_status_s
+{
+	uint8_t opened;
+	uint8_t connected;
+	uint8_t incoming_data;
+	uint8_t subscribed;
+	uint8_t closed;
+	uint8_t disconnected;
+	uint8_t publish_status;
+	uint8_t qmt_stat_status;
+
+}mqtt_status_t;
+
+extern mqtt_status_t mqtt_status;
+
+
+
+typedef enum
+{
+    ready,
+    error_result,
+	cellular_bootup,
+
+	ready_received,
+    network_registration_done,
+	network_registarion_fail,
+    product_version,
+    mqtt_open_success,
+	mqtt_open_fail,
+    mqtt_connection_success,
+	mqtt_connection_fail,
+	mqtt_publish_success,
+	mqtt_publish_fail,
+    mqtt_subcription_received,
+    mqtt_incoming_data_received,
+	mqtt_disconnect,
+    qmt_stat_received,
+    mqtt_disconnected,
+
+    serving_cell_info_received,
+	neighbouring_cell_info_received,
+
+	imei_number_received,
+    sim_ccid_received,
+    time_synchronised,
+	ntp_time_synchronised,
+	prompt_response,
+    qcsq_received,
+
+	certificate_loaded,
+
+	internet_activated,
+
+	ok_result,
+	connect,
+
+	gnss_gps_location_received,
+	gnss_gps_location_failed,
+
+	http_post_success,
+	http_post_fail,
+
+	incoming_data_received,
+
+    invalid_result
+} cellular_command_respone_t;
+
+extern cellular_command_respone_t cellular_command_response;
+
+
+
+typedef struct file_handle_s
+{
+	char data[2048];
+	char name[128];
+	int time_out;
+	int number;
+	int length;
+	int written_length;
+	int storage_length;
+	int check;
+
+}file_handle_t;
+
+extern file_handle_t file_handle;
+
+
+typedef struct list_files_s
+{
+    char filename[64];
+    int size;
+}list_files_t;
+
+extern list_files_t list_files[8];
+
+
+
+class cellular : public usart
+{
+	public:
+		mutex_t& mutex;
+
+		gpio pwrkey_gpio;
+		gpio reset_gpio;
+
+		uint8_t multi_line_response;
+
+
+		uint8_t reboot;
+		uint8_t ready_status;
+		uint8_t	network_registration_status;
+		uint8_t time_status;
+		uint8_t mqtt_open_status;
+		uint8_t mqtt_connection_status;
+
+		uint8_t error_counter;
+
+		uint8_t rx_byte = 0xFF;
+
+
+		uint16_t https_error_code;
+
+		uint32_t rx_counter = 0;
+
+		int signal_strength;
+		int received_signal_power;
+		int channel_snr;
+		int received_signal_quality;
+
+
+		uint8_t downlink_processing_buffer[MAX_WIFI_BUFFER_SIZE];
+		uint8_t downlink_data_buffer[MAX_WIFI_BUFFER_SIZE];
+		char uplink_message_buffer[MAX_WIFI_BUFFER_SIZE];
+
+		char https_error_message_buffer[256];
+
+
+
+		cellular(UART_HandleTypeDef * uart, mutex_t& m, GPIO_TypeDef *cellular_pwrkey_port, uint16_t cellular_pwrkey_pin_number,
+				GPIO_TypeDef *cellular_reset_port, uint16_t cellular_reset_pin_number);
+		virtual ~cellular();
+
+
+		void turn_on_with_power_key(void);
+		void turn_off_with_power_key(void);
+
+		void reset(void);
+
+		void restart(void);
+		void initialise(void);
+		void deinitialise(void);
+
+		void attention(void);
+		void echo_on(void);
+		void echo_off(void);
+		void query_module_status(void);
+
+
+
+		void get_imei(void);
+		void get_sim_ccid(void);
+
+
+		void power_down(void);
+
+		void set_network_scan_sequence(void);
+		void set_network_scan_mode(void);
+
+
+		uint8_t get_network_registartion_status(void);
+		void get_signal_strength(void);
+		uint8_t get_time_sychronised(void);
+
+		uint8_t set_apn_settings(void);
+
+		uint8_t clear_all_status_flags(void);
+		uint8_t clear_mqtt_status_flags(void);
+
+		void init_ssl(void);
+
+		uint8_t open_mqtt_connection(char * end_point, int port_number);
+		uint8_t connect_to_broker(char * access_token);
+
+		uint8_t subscribe(char * topic);
+		uint8_t publish(char * topic, char * data, uint16_t length);
+
+
+		uint8_t delete_all_files_in_UFS(void);
+		void list_UFS_files_in_module_and_save_to_ram(void);
+		uint8_t list_all_files_in_UFS(void);
+
+		uint8_t upload_file(void);
+		uint8_t store_ca_certificate(void);
+		uint8_t store_client_certificate(void);
+		uint8_t store_client_key(void);
+
+		uint8_t load_ssl_certificates(void);
+		uint8_t locate_device_ssl_certificates_and_load(void);
+
+		uint8_t disable_gnss_gps(void);
+		uint8_t enable_gnss_gps(void);
+
+
+		void mqtt_disconnect(void);
+		void close_mqtt_connection(void);
+		void close_connection(void);
+
+
+
+
+		void send_command_and_wait_for_response(char * command,  uint32_t time_out);
+		void send_command_and_wait_for_OK_response(char * command,  uint32_t time_out);
+		void send_command_and_wait_for_CONNECT_response(char * command,  uint32_t time_out);
+		uint8_t send_command_and_wait_for_response(char * command, char * reply, uint32_t time_out);
+
+		void send_command_and_wait_for_multi_line_response(char * command,  uint32_t time_out);
+
+
+		uint8_t process_imei_number(void);
+		uint8_t process_sim_ccid_number(void);
+		uint8_t process_qcsq(void);
+		uint8_t process_time_frame_and_get_date_time(void);
+
+
+		uint8_t process_cellular_data(void);
+
+		static void my_callback(UART_HandleTypeDef * uart);
+};
+
+extern cellular lte;
+//extern cellular *lte;
+
+
+
+void cellular_thread_task(void const * argument);
+void cellular_processing_task(void const * argument);
+
+
+#endif /* CELLULAR_H_ */

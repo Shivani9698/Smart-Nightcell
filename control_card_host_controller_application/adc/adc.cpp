@@ -1,0 +1,412 @@
+/*
+ * adc.cpp
+ *
+ *  Created on: Oct 25, 2025
+ *      Author: Amogh MP
+ */
+
+
+
+
+#include "adc.h"
+#include "mutex_t.h"
+#include "usart_class.h"
+
+
+
+float offset = -0.02;
+
+adc battery(&hadc2);
+
+
+uint8_t calculate_battery_voltage(uint32_t raw_adc)
+{
+	uint8_t percentage = 0;
+
+//	if (raw_adc > 1950)
+//	{
+//		debug.printf("ADC ERROR: raw=%lu > 1950\r\n", raw_adc);
+//
+//		return 0;
+//	}
+
+	float vadc = (raw_adc / 4095.0f) * 3.3f;
+	float vbat = vadc * (890.0f / 330.0f) + offset;
+
+	if(vbat >= 4.2000)
+    {
+		percentage = 100;
+    }
+    else if(vbat >= 4.180)
+    {
+    	percentage =  99;
+    }
+    else if(vbat >= 4.164)
+    {
+    	percentage =  98;
+    }
+    else if(vbat >= 4.148)
+    {
+    	percentage =  97;
+    }
+    else if(vbat >= 4.132)
+    {
+    	percentage =  96;
+    }
+    else if(vbat >= 4.116)
+    {
+    	percentage =  95;
+    }
+    else if(vbat >= 4.100)
+    {
+    	percentage =  94;
+    }
+    else if(vbat >= 4.090)
+    {
+    	percentage =  93;
+    }
+    else if(vbat >= 4.080)
+    {
+    	percentage =  92;
+    }
+    else if(vbat >= 4.070)
+    {
+    	percentage =  91;
+    }
+    else if(vbat >= 4.060)
+    {
+    	percentage =  90;
+    }
+    else if(vbat >= 4.050)
+    {
+    	percentage =  89;
+    }
+    else if(vbat >= 4.040)
+    {
+    	percentage =  88;
+    }
+    else if(vbat >= 4.030)
+    {
+    	percentage =  87;
+    }
+    else if(vbat >= 4.020)
+    {
+    	percentage =  86;
+    }
+    else if(vbat >= 4.010)
+    {
+    	percentage =  85;
+    }
+    else if(vbat >= 4.005)
+    {
+    	percentage =  84;
+    }
+    else if(vbat >= 4.000)
+    {
+    	percentage =  83;
+    }
+    else if(vbat >= 3.990)
+    {
+    	percentage =  82;
+    }
+    else if(vbat >= 3.980)
+    {
+    	percentage =  81;
+    }
+    else if(vbat >= 3.970)
+    {
+    	percentage =  80;
+    }
+    else if(vbat >= 3.960)
+    {
+    	percentage =  79;
+    }
+    else if(vbat >= 3.950)
+    {
+    	percentage =  78;
+    }
+    else if(vbat >= 3.940)
+    {
+    	percentage =  77;
+    }
+    else if(vbat >= 3.930)
+    {
+    	percentage =  76;
+    }
+    else if(vbat >= 3.920)
+    {
+    	percentage =  75;
+    }
+    else if(vbat >= 3.910)
+    {
+    	percentage =  74;
+    }
+    else if(vbat >= 3.905)
+    {
+    	percentage =  73;
+    }
+    else if(vbat >= 3.900)
+    {
+    	percentage =  72;
+    }
+    else if(vbat >= 3.886)
+    {
+    	percentage =  71;
+    }
+    else if(vbat >= 3.878)
+    {
+    	percentage =  70;
+    }
+    else if(vbat >= 3.870)
+    {
+    	percentage =  69;
+    }
+    else if(vbat >= 3.863)
+    {
+    	percentage =  68;
+    }
+    else if(vbat >= 3.856)
+    {
+    	percentage =  67;
+    }
+    else if(vbat >= 3.849)
+    {
+    	percentage =  66;
+    }
+    else if(vbat >= 3.842)
+    {
+		percentage =  65;
+    }
+    else if(vbat >= 3.835)
+    {
+    	percentage =  64;
+    }
+    else if(vbat >= 3.828)
+    {
+    	percentage =  63;
+    }
+    else if(vbat >= 3.821)
+    {
+    	percentage =  62;
+    }
+    else if(vbat >= 3.814)
+    {
+    	percentage =  61;
+    }
+    else if(vbat >= 3.807)
+    {
+    	percentage =  60;
+    }
+    else if(vbat >= 3.800)
+    {
+    	percentage =  59;
+    }
+    else if(vbat >= 3.790)
+    {
+    	percentage =  58;
+    }
+    else if(vbat >= 3.780)
+    {
+    	percentage =  57;
+    }
+    else if(vbat >= 3.770)
+    {
+    	percentage =  56;
+    }
+    else if(vbat >= 3.760)
+    {
+    	percentage =  55;
+    }
+    else if(vbat >= 3.750)
+    {
+    	percentage =  54;
+    }
+    else if(vbat >= 3.740)
+    {
+    	percentage =  53;
+    }
+    else if(vbat >= 3.730)
+    {
+    	percentage =  52;
+    }
+    else if(vbat >= 3.720)
+    {
+    	percentage =  51;
+    }
+    else if(vbat >= 3.700)
+    {
+    	percentage =  50;
+    }
+    else if(vbat >= 3.6875)
+    {
+    	percentage =  48;
+    }
+    else if(vbat >= 3.6750)
+    {
+    	percentage =  46;
+    }
+    else if(vbat >= 3.6625)
+    {
+    	percentage =  44;
+    }
+    else if(vbat >= 3.6500)
+    {
+    	percentage =  42;
+    }
+    else if(vbat >= 3.6375)
+    {
+    	percentage =  40;
+    }
+    else if(vbat >= 3.6250)
+    {
+    	percentage =  38;
+    }
+    else if(vbat >= 3.6125)
+    {
+    	percentage =  36;
+    }
+    else if(vbat >= 3.6000)
+    {
+    	percentage =  34;
+    }
+    else if(vbat >= 3.580)
+    {
+    	percentage =  30;
+    }
+    else if(vbat >= 3.564)
+    {
+    	percentage =  27;
+    }
+    else if(vbat >= 3.548)
+    {
+    	percentage =  24;
+    }
+    else if(vbat >= 3.532)
+    {
+    	percentage =  21;
+    }
+    else if(vbat >= 3.516)
+    {
+    	percentage =  18;
+    }
+    else if(vbat >= 3.500)
+    {
+    	percentage =  15;
+    }
+    else if(vbat >= 3.490)
+    {
+    	percentage =  14;
+    }
+    else if(vbat >= 3.480)
+    {
+    	percentage =  13;
+    }
+    else if(vbat >= 3.470)
+    {
+    	percentage =  12;
+    }
+    else if(vbat >= 3.460)
+    {
+    	percentage =  11;
+    }
+    else if(vbat >= 3.450)
+    {
+    	percentage =  10;
+    }
+    else if(vbat >= 3.440)
+    {
+    	percentage =  9;
+    }
+    else if(vbat >= 3.430)
+    {
+    	percentage =  8;
+    }
+    else if(vbat >= 3.420)
+    {
+    	percentage =  7;
+    }
+    else if(vbat >= 3.410)
+    {
+    	percentage =  6;
+    }
+    else if(vbat >= 3.400)
+    {
+    	percentage =  5;
+    }
+    else if(vbat >= 3.390)
+    {
+    	percentage =  4;
+    }
+    else if(vbat >= 3.30)
+    {
+    	percentage =  3;
+    }
+    else if(vbat >= 3.20)
+    {
+    	percentage =  2;
+    }
+    else
+    {
+    	percentage =  1;
+    }
+
+	debug.printf("Vadc: %.3fV, Vbat: %.3fV, battery percentage: %d\r\n", vadc, vbat, percentage);
+
+	return percentage;
+}
+
+
+adc::adc(ADC_HandleTypeDef * adc_handle)
+{
+	hadc = adc_handle;
+}
+
+
+adc::~adc()
+{
+	// TODO Auto-generated destructor stub
+}
+
+
+uint32_t adc::read_adc(void)
+{
+	uint32_t raw_adc = 0;
+
+	HAL_ADC_Start(hadc);
+	HAL_ADC_PollForConversion(hadc, 100);
+
+	if((HAL_ADC_GetState(hadc) & HAL_ADC_STATE_REG_EOC) == HAL_ADC_STATE_REG_EOC)
+	{
+		raw_adc = HAL_ADC_GetValue(hadc);
+	}
+
+	HAL_ADC_Stop(hadc);
+
+//	debug.printf("ADC Count: %d\r\n", raw_adc);
+
+	return raw_adc;
+
+}
+
+
+uint8_t adc::read_battery_percentage_average(uint8_t number_of_samples)
+{
+	uint32_t adc_value_average = 0;
+
+	if (1 == adc_mutex.lock(1000))
+	{
+		if(number_of_samples <= 0)
+		{
+			number_of_samples = 1;
+		}
+
+		for(int i = 0; i < number_of_samples; i++)
+		{
+			adc_value_average += read_adc();
+		}
+
+		adc_mutex.unlock();
+	}
+
+	return (calculate_battery_voltage(adc_value_average/number_of_samples));
+}

@@ -1,0 +1,3 @@
+../sht40_wrapper/sht40.cpp:12:1:SHT40::SHT40(i2c*, uint16_t)	1
+../sht40_wrapper/sht40.cpp:17:9:uint8_t SHT40::crc8(const uint8_t*, uint16_t)	4
+../sht40_wrapper/sht40.cpp:29:15:SHT40::Status SHT40::read(int16_t&, uint8_t&)	5

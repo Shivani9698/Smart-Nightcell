@@ -1,0 +1,69 @@
+/*
+ * lorawan.h
+ *
+ *  Created on: Aug 10, 2025
+ *      Author: Amogh MP
+ */
+
+#ifndef LORAWAN_STM32WL_H_
+#define LORAWAN_STM32WL_H_
+
+
+
+#include "main.h"
+#include "includes.h"
+#include "usart_class.h"
+#include "gpio.h"
+#include "mutex_t.h"
+#include "radar_sensor.h"
+
+
+
+#define DEFAULT_DEVICE_FIRMWARE_VERSION				"1.0.0"
+#define DEFAULT_DEVICE_NEW_FIRMWARE_VERSION			"1.0.0"
+
+
+
+#define MAX_CREDENTIALS_TOKEN_LENGTH				64
+#define DEFAULT_UPLOAD_FREQUENCY_IN_SEC				60
+
+
+
+#define DEFAULT_LORAWAN_APP_KEY						"23,7E,7D,E7,1B,FC,53,6F,C3,0F,18,A0,2B,92,5D,E6"
+#define DEFAULT_LORAWAN_NETWORK_KEY					"23,7E,7D,E7,1B,FC,53,6F,C3,0F,18,A0,2B,92,5D,E6"
+#define DEFAULT_LORAWAN_APP_SESSION_KEY				"23,7E,7D,E7,1B,FC,53,6F,C3,0F,18,A0,2B,92,5D,E6"
+#define DEFAULT_LORAWAN_NETWORK_SESSION_KEY			"23,7E,7D,E7,1B,FC,53,6F,C3,0F,18,A0,2B,92,5D,E6"
+#define DEFAULT_LORAWAN_DEVICE_EUI					"98,3A,DC,45,23,8E,89,A3"
+#define DEFAULT_LORAWAN_JOIN_EUI					"01,01,01,01,01,01,01,01"
+#define DEFAULT_LORAWAN_DEVICE_ADDRESS				"01,30,70,E5"
+
+
+
+
+class lorawan_params_t : public usart, public gpio
+{
+	public:
+	mutex_t& mutex;
+
+	char data_buffer[MAX_WIFI_BUFFER_SIZE];
+	char data_processing_buffer[MAX_WIFI_BUFFER_SIZE];
+	uint8_t data_tx_buffer[MAX_WIFI_BUFFER_SIZE];
+
+	uint16_t rx_counter = 0;
+	uint8_t rx_byte = 0xFF;
+
+
+	lorawan_params_t(UART_HandleTypeDef * uart, mutex_t& m, GPIO_TypeDef *lora_chip_reset_port, uint16_t lora_chip_reset_pin_number);
+	virtual ~lorawan_params_t();
+
+	void initialise(void);
+	void deinitialise(void);
+
+	static void my_callback(UART_HandleTypeDef * uart);
+
+};
+
+extern lorawan_params_t lorawan;
+
+
+#endif /* LORAWAN_STM32WL_H_ */

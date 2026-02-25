@@ -1,0 +1,164 @@
+
+
+#include "one_wire_sensor.h"
+
+
+#if USE_ONEWIRE_DIGITAL_SENSOR
+
+
+extern TIM_HandleTypeDef htim17;
+
+
+one_wire_sensor one_wire(ONE_WIRE_SENSOR_DATA_GPIO_Port, ONE_WIRE_SENSOR_DATA_Pin);
+
+
+
+void timer_delay(uint16_t time)
+{
+	/* change your code here for the delay in microseconds */
+	__HAL_TIM_SET_COUNTER(&htim17, 0);
+	while ((__HAL_TIM_GET_COUNTER(&htim17)) < time);
+}
+
+void Set_Pin_Output(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	GPIO_InitStruct.Pin = GPIO_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOx, &GPIO_InitStruct);
+}
+
+void Set_Pin_Input(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
+{
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	GPIO_InitStruct.Pin = GPIO_Pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_PULLUP;
+	HAL_GPIO_Init(GPIOx, &GPIO_InitStruct);
+}
+
+
+uint8_t DS18B20_Start (void)
+{
+	uint8_t Response = 0;
+	Set_Pin_Output(one_wire.gpiox, one_wire.port_pin_number);   // set the pin as output
+	HAL_GPIO_WritePin(one_wire.gpiox, one_wire.port_pin_number, GPIO_PIN_RESET);  // pull the pin low
+	timer_delay(480);   // delay according to datasheet
+
+	Set_Pin_Input(one_wire.gpiox, one_wire.port_pin_number);    // set the pin as input
+	timer_delay(80);    // delay according to datasheet
+
+	if (!(HAL_GPIO_ReadPin (one_wire.gpiox, one_wire.port_pin_number))) Response = 1;    // if the pin is low i.e the presence pulse is detected
+	else Response = -1;
+
+	timer_delay(400); // 480 us delay totally.
+
+	return Response;
+}
+
+void DS18B20_Write (uint8_t data)
+{
+	Set_Pin_Output(one_wire.gpiox, one_wire.port_pin_number);  // set as output
+
+	for (int i=0; i<8; i++)
+	{
+		if ((data & (1<<i))!=0)  // if the bit is high
+		{
+			Set_Pin_Output(one_wire.gpiox, one_wire.port_pin_number);  // set as output
+			HAL_GPIO_WritePin(one_wire.gpiox, one_wire.port_pin_number, GPIO_PIN_RESET);  // pull the pin LOW
+			timer_delay(1);  // wait for 1 us
+
+			Set_Pin_Input(one_wire.gpiox, one_wire.port_pin_number);  // set as input
+			timer_delay(50);  // wait for 60 us
+		}
+
+		else  // if the bit is low
+		{
+			Set_Pin_Output(one_wire.gpiox, one_wire.port_pin_number);
+			HAL_GPIO_WritePin(one_wire.gpiox, one_wire.port_pin_number, GPIO_PIN_RESET);  // pull the pin LOW
+			timer_delay(50);  // wait for 60 us
+
+			Set_Pin_Input(one_wire.gpiox, one_wire.port_pin_number);
+		}
+	}
+}
+
+uint8_t DS18B20_Read (void)
+{
+	uint8_t value=0;
+
+	Set_Pin_Input(one_wire.gpiox, one_wire.port_pin_number);
+
+	for (int i=0;i<8;i++)
+	{
+		Set_Pin_Output(one_wire.gpiox, one_wire.port_pin_number);   // set as output
+
+		HAL_GPIO_WritePin(one_wire.gpiox, one_wire.port_pin_number, GPIO_PIN_RESET);  // pull the data pin LOW
+		timer_delay(1);  // wait for > 1us
+
+		Set_Pin_Input(one_wire.gpiox, one_wire.port_pin_number);  // set as input
+		if (HAL_GPIO_ReadPin (one_wire.gpiox, one_wire.port_pin_number))  // if the pin is HIGH
+		{
+			value |= 1<<i;  // read = 1
+		}
+		timer_delay(50);  // wait for 60 us
+	}
+	return value;
+}
+
+
+one_wire_sensor::one_wire_sensor(GPIO_TypeDef * gpio_port, uint16_t pin_number) : gpio(gpio_port, pin_number)
+{
+
+}
+
+one_wire_sensor::~one_wire_sensor(void)
+{
+
+}
+
+void one_wire_sensor::initialise(void)
+{
+	MX_TIM17_Init();
+	HAL_TIM_Base_Start(&htim17);
+}
+
+void one_wire_sensor::deinitialise(void)
+{
+	HAL_TIM_Base_Stop(&htim17);
+	HAL_TIM_Base_DeInit(&htim17);
+}
+
+void one_wire_sensor::read_temperature(void)
+{
+	Presence = DS18B20_Start();
+	timer_delay(1);
+	DS18B20_Write(0xCC);
+	DS18B20_Write(0x44);
+	timer_delay(800);
+
+	Presence = DS18B20_Start();
+	timer_delay(1);
+	DS18B20_Write(0xCC);
+	DS18B20_Write(0xBE);
+
+	Temp_byte1 = DS18B20_Read();
+	Temp_byte2 = DS18B20_Read();
+	TEMP = (Temp_byte2<<8)|Temp_byte1;
+	Temperature = (float)TEMP/16;
+	Temperature *= 10.0;
+
+	temperature = (int16_t)(Temperature);
+	humidity = 0;
+}
+
+void one_wire_sensor::get_temperature_and_humidity(void)
+{
+	initialise();
+	read_temperature();
+	timer_delay(10);
+	deinitialise();
+}
+
+#endif

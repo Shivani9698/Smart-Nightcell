@@ -1,0 +1,28 @@
+../external_eeprom/external_eeprom.cpp:33:1:external_eeprom::external_eeprom(I2C_HandleTypeDef*, uint16_t)	24	static
+../external_eeprom/external_eeprom.cpp:39:1:external_eeprom::~external_eeprom()	16	static
+../external_eeprom/external_eeprom.cpp:39:1:virtual external_eeprom::~external_eeprom()	16	static
+../external_eeprom/external_eeprom.cpp:45:6:void external_eeprom::erase_eeprom()	288	static
+../external_eeprom/external_eeprom.cpp:61:6:void external_eeprom::write_byte(uint8_t, uint16_t)	24	static
+../external_eeprom/external_eeprom.cpp:72:9:uint8_t external_eeprom::read_byte(uint16_t)	32	static
+../external_eeprom/external_eeprom.cpp:86:6:void external_eeprom::write_int(int, uint16_t)	40	static
+../external_eeprom/external_eeprom.cpp:98:10:uint32_t external_eeprom::read_int(uint16_t)	32	static
+../external_eeprom/external_eeprom.cpp:115:9:uint8_t external_eeprom::write_structure(uint8_t*, uint16_t, uint16_t)	48	static
+../external_eeprom/external_eeprom.cpp:142:9:uint8_t external_eeprom::read_structure(uint8_t*, uint16_t, uint16_t)	40	static
+../external_eeprom/external_eeprom.cpp:161:6:void external_eeprom::storage_counter_write(uint32_t, uint16_t)	40	static
+../external_eeprom/external_eeprom.cpp:177:10:uint32_t external_eeprom::storage_counter_read(uint16_t)	40	static
+../external_eeprom/external_eeprom.cpp:196:6:void external_eeprom::reader_counter_write(uint32_t, uint16_t)	40	static
+../external_eeprom/external_eeprom.cpp:210:10:uint32_t external_eeprom::reader_counter_read(uint16_t)	40	static
+../external_eeprom/external_eeprom.cpp:230:6:void external_eeprom::message_counter_write(uint32_t, uint16_t)	40	static
+../external_eeprom/external_eeprom.cpp:245:10:uint32_t external_eeprom::message_counter_read(uint16_t)	40	static
+../external_eeprom/external_eeprom.cpp:266:9:uint8_t external_eeprom::store_device_info(uint8_t*, uint16_t)	32	static
+../external_eeprom/external_eeprom.cpp:274:9:uint8_t external_eeprom::get_device_info(uint8_t*, uint16_t)	32	static
+../external_eeprom/external_eeprom.cpp:283:9:uint8_t external_eeprom::store_wifi_credentials_info(uint8_t*, uint16_t)	32	static
+../external_eeprom/external_eeprom.cpp:292:9:uint8_t external_eeprom::get_wifi_credentials_info(uint8_t*, uint16_t)	32	static
+../external_eeprom/external_eeprom.cpp:301:9:uint8_t external_eeprom::store_peripheral_configuration_info(uint8_t*, uint16_t)	32	static
+../external_eeprom/external_eeprom.cpp:310:9:uint8_t external_eeprom::get_peripheral_configuration_info(uint8_t*, uint16_t)	32	static
+../external_eeprom/external_eeprom.cpp:319:9:uint8_t external_eeprom::store_next_message_to_send_info(uint8_t*, uint16_t)	32	static
+../external_eeprom/external_eeprom.cpp:327:9:uint8_t external_eeprom::get_next_message_to_send_info(uint8_t*, uint16_t)	32	static
+../external_eeprom/external_eeprom.cpp:333:1:void __static_initialization_and_destruction_0()	8	static
+../external_eeprom/external_eeprom.cpp:333:1:void __static_initialization_and_destruction_1()	8	static
+../external_eeprom/external_eeprom.cpp:333:1:cpp)	8	static
+../external_eeprom/external_eeprom.cpp:333:1:cpp)	8	static

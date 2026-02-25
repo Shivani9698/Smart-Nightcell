@@ -1,0 +1,76 @@
+/*
+ * protocol.c
+ *
+ *  Created on: Aug 21, 2025
+ *      Author: Amogh MP
+ */
+
+
+
+
+#include "main.h"
+#include "protocol.h"
+#include "temp_humidity_sensor.h"
+#include "application_logic.h"
+#include "eeprom.h"
+
+
+next_action_t next_action;
+
+
+
+void create_periodic_message_packet(uint8_t *buf)
+{
+	memset(buf, 0, LORAWAN_APP_DATA_BUFFER_MAX_SIZE);
+	memset(&read_sensor_data, 0, sizeof(read_sensor_data));
+
+	read_next_sample(&read_sensor_data);
+
+	buf[0] = periodic_message;
+
+	buf[1] = (read_sensor_data.epoch_time & 0xFF000000) >> 24;
+	buf[2] = (read_sensor_data.epoch_time & 0x00FF0000) >> 16;
+	buf[3] = (read_sensor_data.epoch_time & 0x0000FF00) >> 8;
+	buf[4] = read_sensor_data.epoch_time & 0xFF;
+
+	buf[5] = (read_sensor_data.sample_number & 0xFF000000) >> 24;
+	buf[6] = (read_sensor_data.sample_number & 0x00FF0000) >> 16;
+	buf[7] = (read_sensor_data.sample_number & 0x0000FF00) >> 8;
+	buf[8] = read_sensor_data.sample_number & 0xFF;
+
+
+	buf[9] = (read_sensor_data.temperature & 0xFF00) >> 8;
+	buf[10] = read_sensor_data.temperature & 0x00FF;
+	buf[11] = read_sensor_data.humidity;
+
+	buf[12] = get_battery_percentage();
+
+}
+
+
+void create_configuration_uplink_message(uint8_t *buf)
+{
+	memset(buf, 0, LORAWAN_APP_DATA_BUFFER_MAX_SIZE);
+
+	buf[0] = configuration_retrieval_message;
+
+	// TODO: check which counter needs to be passed
+//	buf[1] = (device_config.number_of_messages & 0xFF000000) >> 24;
+//	buf[2] = (device_config.number_of_messages & 0x00FF0000) >> 16;
+//	buf[3] = (device_config.number_of_messages & 0x0000FF00) >> 8;
+//	buf[4] = device_config.number_of_messages & 0xFF;
+
+	buf[5] = (device_config.sample_interval & 0xFF00) >> 8;
+	buf[6] = device_config.sample_interval & 0x00FF;
+
+	buf[7] = get_battery_percentage();
+}
+
+
+void create_battery_caliberation_ack_uplink_message(uint8_t *buf)
+{
+	memset(buf, 0, LORAWAN_APP_DATA_BUFFER_MAX_SIZE);
+
+	buf[0] = battery_calibartion_response;
+	buf[1] = get_battery_percentage();
+}

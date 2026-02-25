@@ -1,0 +1,250 @@
+/*
+ * norflash.h
+ *
+ *  Created on: June 16, 2025
+ *      Author: Amogh MP
+ */
+
+#ifndef INC_NORFLASH_H_
+#define INC_NORFLASH_H_
+
+
+#include "main.h"
+#include "includes.h"
+#include "spi.h"
+#include "gpio.h"
+
+
+
+/*
+ * NOTE: The 512Mb (64MB) NOR Flash is divided into 1024 sectors each having size of 64KB.
+ * Each sector is divided into 2 subsectors each having size of 32KB.
+ * Each subsector is again divided into 8 blocks each having size of 4KB.
+ */
+
+
+#define SECTOR_SIZE									65536 // 64KB
+#define NUMBER_OF_SECTORS 							1024
+#define NUMBER_OF_SUB_SECTORS_IN_EACH_SECTOR		2 // therefore there are 2048 subsectors
+#define SIZE_OF_EACH_SUBSECTOR						32768 // 32KB
+#define NUMBER_OF_BLOCKS_IN_SUBSECTOR				8
+#define SIZE_OF_EACH_BLOCK							4096 // 4KB
+#define PAGE_SIZE									256
+
+
+
+#define WRITE_SIZE									128
+#define MAX_SAMPLES_IN_A_SECTOR						512
+
+
+#define SPI_MODE        0                       // SPI Mode can be 0 or 3 . see data sheet
+#define SPI_NBIT        8                       // Number of bits 8.
+
+
+#define DUMMY_BYTE		0x00
+#define DUMMY_ADDR      0x00
+#define WAIT_TIME       1
+
+
+#define 		ADDRESS_BMASK3     				0xff000000
+#define 		ADDRESS_BMASK2 					0x00ff0000
+#define 		ADDRESS_BMASK1    				0x0000ff00
+#define 		ADDRESS_BMASK0 			    	0x000000ff
+
+#define 		ADDR_BSHIFT3    				24
+#define 		ADDR_BSHIFT2    				16
+#define 		ADDR_BSHIFT1    				8
+#define 		ADDR_BSHIFT0    				0
+
+
+
+
+#define      FLASH_INS_WREN        			  0x06  	/* Write enable */
+#define      FLASH_INS_WRDI        			  0x04  	/* Write disable */
+
+/* RESET commands */
+#define      FLASH_INS_REN		  			  0x66  	/* Reset enable */
+#define      FLASH_INS_RMEM		  			  0x99  	/* Reset memory */
+
+/* IDENTIFICATION commands */
+#define      FLASH_INS_RDID        			  0x9F  	/* Read Identification */
+#define      FLASH_INS_RDID_ALT    			  0x9E  	/* Read Identification (alternative command) */
+#define      FLASH_INS_MULT_IO_RDID   		  0xAF   /* Read multiple I/O read id */
+#define      FLASH_INS_DISCOVER_PARAMETER	  0x5A   /* Read serial flash discovery parameter */
+
+/* DATA READ commands */
+#define      FLASH_INS_READ 				  0x03   /* Read Data Bytes */
+#define      FLASH_INS_FAST_READ 			  0x0B   /* Read Data Bytes at Higher Speed */
+#define      FLASH_INS_DOFR 				  0x3B  	/* Dual Output Fast Read */
+#define      FLASH_INS_DIOFR 				  0xBB   /* Dual Input/Output Fast Read */
+#define      FLASH_INS_QOFR 				  0x6B   /* Quad Output Fast Read */
+#define      FLASH_INS_QIOFR 				  0xEB   /* Quad Input/Output Fast Read */
+#define      FLASH_INS_4READ4D 				  0xE7   /* Word Read Quad I/O */
+
+/* DATA READ commands (DTR dedicated instructions) */
+#define      FLASH_INS_FAST_READDTR 		  0x0D   /* Read Data Bytes at Higher Speed */
+#define      FLASH_INS_DOFRDTR 				  0x3D   /* Dual Output Fast Read */
+#define      FLASH_INS_DIOFRDTR 			  0xBD   /* Dual Input/Output Fast Read */
+#define      FLASH_INS_QOFRDTR 				  0x6D   /* Quad Output Fast Read */
+#define      FLASH_INS_QIOFRDTR 			  0xED   /* Quad Input/Output Fast Read */
+
+/* DATA READ commands (32-bit address) */
+#define      FLASH_INS_READ4BYTE 			  0x13   /* Read Data Bytes */
+#define      FLASH_INS_FAST_READ4BYTE 		  0x0C   /* Read Data Bytes at Higher Speed */
+#define      FLASH_INS_DOFR4BYTE 			  0x3C   /* Dual Output Fast Read */
+#define      FLASH_INS_DIOFR4BYTE 			  0xBC   /* Dual Input/Output Fast Read */
+#define      FLASH_INS_QOFR4BYTE 			  0x6C   /* Quad Output Fast Read */
+#define      FLASH_INS_QIOFR4BYTE 			  0xEC   /* Quad Input/Output Fast Read */
+
+/* DATA READ commands (32-bit address in DTR mode) */
+#define      FLASH_INS_FAST_READDTR4BYTE 	  0x0E   /* Read Data Bytes at Higher Speed */
+#define      FLASH_INS_DIOFRDTR4BYTE 		  0xBE   /* Dual Input/Output Fast Read */
+#define      FLASH_INS_QIOFRDTR4BYTE 		  0xEE   /* Quad Input/Output Fast Read */
+
+/* PROGRAM DATA commands */
+#define      FLASH_INS_PP 					  0x02   /* Page Program  */
+#define      FLASH_INS_DIFP					  0xA2   /* Dual Input Fast Program  */
+#define      FLASH_INS_DIEFP 				  0xD2   /* Dual Input Extended Fast Program */
+#define      FLASH_INS_QIFP 				  0x32   /* Quad Input Fast Program */
+#define      FLASH_INS_QIEFP				  0x12  	/* Quad Input Extended Fast Program */
+#define      FLASH_INS_QIEFP_ALT			  0x38   /* Quad Input Extended Fast Program (alternative command) */
+
+/* PROGRAM DATA commands (32-bit address) */
+#define      FLASH_INS_PP4BYTE 				  0x12   /* Page Program with */
+#define      FLASH_INS_QIFP4BYTE 			  0x34   /* Quad Input Fast Program with */
+#define      FLASH_INS_QIEFP4BYTE 			  0x3E   /* Quad Input Extended Fast Program */
+#define      FLASH_INS_SE4BYTE 				  0xDC   /* Sector Erase with */
+#define      FLASH_INS_SSE4BYTE 			  0x21   /* Sub-Sector Erase with */
+
+/* ERASE DATA commands */
+#define      FLASH_INS_SE					  0xD8   /* Sector Erase */
+#define      FLASH_INS_SSE					  0x20   /* Sub-Sector Erase */
+#define      FLASH_INS_SSE32K				  0x52   /* Sub-Sector Erase for 32KB */
+#define      FLASH_INS_BE					  0xC7   /* Bulk Erase */
+#define      FLASH_INS_DE                     0xC4   /* Die Erase */
+#define      FLASH_INS_BE_ALT				  0x60   /* Bulk Erase (alternative command) */
+
+/* RESUME/SUSPEND commands */
+#define      FLASH_INS_PER 					  0x7A   /* Program/Erase Resume */
+#define      FLASH_INS_PES 					  0x75   /* Program/Erase Suspend */
+
+/* REGISTER commands */
+#define      FLASH_INS_RDSR 				  0x05   /* Read Status */
+#define      FLASH_INS_WRSR 				  0x01   /* Write Status */
+#define      FLASH_INS_RDFSR 				  0x70   /* Read Flag Status */
+#define      FLASH_INS_CLRFSR 				  0x50   /* Clear Flag Status */
+#define      FLASH_INS_RDNVCR 				  0xB5   /* Read NV Configuration */
+#define      FLASH_INS_WRNVCR 				  0xB1   /* Write NV Configuration */
+#define      FLASH_INS_RDVCR 				  0x85   /* Read Volatile Configuration */
+#define      FLASH_INS_WRVCR 				  0x81   /* Write Volatile Configuration */
+#define      FLASH_INS_RDVECR 				  0x65   /* Read Volatile Enhanced Configuration */
+#define      FLASH_INS_WRVECR 				  0x61   /* Write Volatile Enhanced Configuration */
+#define      FLASH_INS_WREAR 				  0xC5   /* Write Extended Address */
+#define      FLASH_INS_RDEAR 				  0xC8   /* Read Extended Address */
+#define      FLASH_INS_PPMR 				  0x68   /* Program Protection Mgmt */
+#define      FLASH_INS_RDPMR 				  0x2B   /* Read Protection Mgmt */
+#define      FLASH_INS_RDGPRR 				  0x96   /* Read General Purpose Read */
+
+/* Advanced Sectors Protection Commands */
+#define      FLASH_INS_ASPRD 				  0x2D   /* ASP Read */
+#define      FLASH_INS_ASPP 				  0x2C   /* ASP Program */
+#define      FLASH_INS_DYBRD 				  0xE8   /* DYB Read */
+#define      FLASH_INS_DYBWR 				  0xE5   /* DYB Write */
+#define      FLASH_INS_PPBRD 				  0xE2   /* PPB Read */
+#define      FLASH_INS_PPBP 				  0xE3   /* PPB Program */
+#define      FLASH_INS_PPBE 				  0xE4   /* PPB Erase */
+#define      FLASH_INS_PLBRD 				  0xA7   /* PPB Lock Bit Read */
+#define      FLASH_INS_PLBWR 				  0xA6   /* PPB Lock Bit Write */
+#define      FLASH_INS_PASSRD 				  0x27   /* Password Read */
+#define      FLASH_INS_PASSP 				  0x28   /* Password Write */
+#define      FLASH_INS_PASSU 				  0x29   /* Password Unlock */
+#define      FLASH_INS_DYBRD4BYTE 			  0xE0   /* DYB Read with 32-bit Address */
+#define      FLASH_INS_DYBWR4BYTE 			  0xE1   /* DYB Write with 32-bit Address */
+
+/* 4-byte address Commands */
+#define      FLASH_INS_EN4BYTEADDR 			  0xB7   /* Enter 4-byte address mode */
+#define      FLASH_INS_EX4BYTEADDR 			  0xE9   /* Exit 4-byte address mode */
+
+/* OTP commands */
+#define      FLASH_INS_RDOTP				  0x4B   /* Read OTP array */
+#define      FLASH_INS_PROTP				  0x42   /* Program OTP array */
+
+/* DEEP POWER-DOWN commands */
+#define      FLASH_INS_ENTERDPD				  0xB9   /* Enter deep power-down */
+#define      FLASH_INS_RELEASEDPD			  0xAB    /* Release deep power-down */
+
+/* ADVANCED SECTOR PROTECTION commands */
+#define      FLASH_ASPRD					  0x2D   /* Advanced sector protection read */
+#define      FLASH_ASPP						  0x2C   /* Advanced sector protection program */
+#define      FLASH_DYBRD					  0xE8   /* Dynamic protection bits read */
+#define      FLASH_DYBWR					  0xE5   /* Dynamic protection bits write */
+#define      FLASH_PPBRD					  0xE2   /* Permanent protection bits read */
+#define      FLASH_PPBP						  0xE3   /* Permanent protection bits write */
+#define      FLASH_PPBE						  0xE4   /* Permanent protection bits erase */
+#define      FLASH_PLBRD					  0xA7   /* Permanent protection bits lock bit read */
+#define      FLASH_PLBWR					  0xA6   /* Permanent protection bits lock bit write	*/
+#define      FLASH_PASSRD					  0x27   /* Password read */
+#define      FLASH_PASSP					  0x28   /* Password write */
+#define      FLASH_PASSU					  0x29  /* Password unlock */
+
+
+
+
+
+
+extern char buggy_cart_write_data_buffer[WRITE_SIZE];
+extern char buggy_cart_read_data_buffer[WRITE_SIZE];
+
+
+
+
+
+class nor_flash : public gpio , public spi
+{
+	public:
+		nor_flash(SPI_HandleTypeDef * spi_handle, GPIO_TypeDef * gpiox, uint16_t gpio_pin_number);
+		virtual ~nor_flash();
+
+		void reset(void);
+		uint32_t read_id(void);
+
+
+		uint8_t nor_write_read_bytes(char * send_data, char * read_data, uint16_t length);
+		uint8_t nor_write_bytes(char * send_data, uint16_t length);
+		uint8_t nor_write_byte(uint8_t data);
+		void nor_transmit_byte(uint8_t data);
+		void bulk_erase(void);
+		void sector_erase(uint32_t sector_address);
+		void initialize_nor_flash(void);
+
+		void page_read(uint32_t page_address, char * read_data, uint16_t length);
+		void page_write(uint32_t page_address, char * write_data, uint16_t length);
+
+		void wait_for_oip_to_clear(void);
+		uint16_t read_novolatile_read_register(uint8_t register_address);
+		uint8_t  read_register(uint8_t register_address);
+		void clear_register(uint8_t reg_address);
+		void write_register(uint8_t register_address, uint8_t reg_value);
+		void unlock_all_sectors(void);
+
+		uint16_t read_non_volatile_config_register(void);
+		uint8_t read_volatile_config_register(void);
+		uint8_t read_enhanced_volatile_config_register(void);
+		uint8_t read_flag_register(void);
+		uint8_t read_global_freeze_bit(void);
+		void erase_sub_subsector(uint32_t address);
+
+		uint8_t save_data_packets(char* data_buffer);
+		uint8_t read_data_packets(char* buffer);
+
+	private:
+		void write_disable(void);
+		void write_enable(void);
+		void chip_enable(void);
+		void chip_disable(void);
+};
+
+extern nor_flash nor;
+
+
+#endif /* INC_NORFLASH_H_ */

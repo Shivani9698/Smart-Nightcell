@@ -1,0 +1,290 @@
+ /*
+ * device_info.cpp
+ *
+ *  Created on: Jul 22, 2025
+ *      Author: Amogh MP
+ */
+
+
+#include "includes.h"
+#include "device_info.h"
+#include "external_eeprom.h"
+#include "peripherals_t.h"
+#include "semaphore_t.h"
+
+
+
+
+
+
+char ca_certificate[2048] = "-----BEGIN CERTIFICATE-----\
+MIIDQTCCAimgAwIBAgITBmyfz5m/jAo54vB4ikPmljZbyjANBgkqhkiG9w0BAQsF\
+ADA5MQswCQYDVQQGEwJVUzEPMA0GA1UEChMGQW1hem9uMRkwFwYDVQQDExBBbWF6\
+b24gUm9vdCBDQSAxMB4XDTE1MDUyNjAwMDAwMFoXDTM4MDExNzAwMDAwMFowOTEL\
+MAkGA1UEBhMCVVMxDzANBgNVBAoTBkFtYXpvbjEZMBcGA1UEAxMQQW1hem9uIFJv\
+b3QgQ0EgMTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALJ4gHHKeNXj\
+ca9HgFB0fW7Y14h29Jlo91ghYPl0hAEvrAIthtOgQ3pOsqTQNroBvo3bSMgHFzZM\
+9O6II8c+6zf1tRn4SWiw3te5djgdYZ6k/oI2peVKVuRF4fn9tBb6dNqcmzU5L/qw\
+IFAGbHrQgLKm+a/sRxmPUDgH3KKHOVj4utWp+UhnMJbulHheb4mjUcAwhmahRWa6\
+VOujw5H5SNz/0egwLX0tdHA114gk957EWW67c4cX8jJGKLhD+rcdqsq08p8kDi1L\
+93FcXmn/6pUCyziKrlA4b9v7LWIbxcceVOF34GfID5yHI9Y/QCB/IIDEgEw+OyQm\
+jgSubJrIqg0CAwEAAaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC\
+AYYwHQYDVR0OBBYEFIQYzIU07LwMlJQuCFmcx7IQTgoIMA0GCSqGSIb3DQEBCwUA\
+A4IBAQCY8jdaQZChGsV2USggNiMOruYou6r4lK5IpDB/G/wkjUu0yKGX9rbxenDI\
+U5PMCCjjmCXPI6T53iHTfIUJrU6adTrCC2qJeHZERxhlbI1Bjjt/msv0tadQ1wUs\
+N+gDS63pYaACbvXy8MWy7Vu33PqUXHeeE6V/Uq2V8viTO96LXFvKWlJbYK8U90vv\
+o/ufQJVtMVT8QtPHRh8jrdkPSHCa2XV4cdFyQzR1bldZwgJcJmApzyMZFo6IQ6XU\
+5MsI+yMRQ+hDKXJioaldXgjUkK642M4UwtBV8ob2xJNDd2ZhwLnoQdeXeGADbkpy\
+rqXRfboQnoZsG4q5WTP468SQvvG5";
+
+char client_certificate[2048] = "-----BEGIN CERTIFICATE-----\
+MIIEpzCCAo+gAwIBAgIUD4kknBFXD7kWa8oyq6yt3SizznIwDQYJKoZIhvcNAQEL\
+BQAwSzELMAkGA1UEBhMCVVMxDjAMBgNVBAgMBVN0YXRlMQ0wCwYDVQQHDARDaXR5\
+MQwwCgYDVQQKDANPcmcxDzANBgNVBAMMBlJvb3RDQTAeFw0yNTEwMjEwOTA1NDNa\
+Fw0yNjEwMjEwOTA1NDNaMGoxCzAJBgNVBAYTAlVTMRMwEQYDVQQIDApXYXNoaW5n\
+dG9uMRAwDgYDVQQHDAdTZWF0dGxlMRcwFQYDVQQKDA5NeU9yZ2FuaXphdGlvbjEb\
+MBkGA1UEAwwSY2xpZW50QGV4YW1wbGUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOC\
+AQ8AMIIBCgKCAQEA+1hb1/saTdemXGMyZUtP/BjgmzrtaQ7vi5Qavm+eWi1BHm/q\
+oQq87aa04DWyZnovTTF0JFEtzCwegSeNpEmqA0bcaMG5zDVIxA4tnrLI1u9KsMhp\
+KrLsftae7yIbdIwm/3Zz/qcGxgPjTANtFUMkyrDlzOHhSorHSlxD1fB+tOpJ3AAl\
+FKbL5XANeQU9u8acKoQKBMAgc1f5fnDg0sXZVyhVi9fatnpOwwsq1NVPLVEz10Yr\
+C8mVlXH3xXbUb7OSXA4RrMvCAMoJLnZGHrcfH7IpEan3W/BNO67vny3yakP1rKoj\
+Ku+jvnKr6YZr90W2YrrnQxZBIPlVOxX4ydrGvQIDAQABo2QwYjALBgNVHQ8EBAMC\
+BaAwEwYDVR0lBAwwCgYIKwYBBQUHAwIwHQYDVR0OBBYEFOOEZNfmd9TCk5wrSLeV\
+AU67jJtWMB8GA1UdIwQYMBaAFPjLemgRYnaOPS8gDUbWnBsjlFY6MA0GCSqGSIb3\
+DQEBCwUAA4ICAQAxtz1aYZSpdCtfs0rTwp2s11kVkxWSPjUAPwzpggsnF7FMna/l\
+O6n6ToqKTaPSKJnk1xxoel3ITULLD0tDALgdHQYIZB97DAtJcohMp4iwzhhYKWIy\
+CRN8EUZvQEgi40wqrjFbp9UX+NUCbAnlbsgXjiTsFf9ZzH8eAqd3hHJnY49NcM2/\
++xfR31XDuSgrg//pO6BzmTuCVyAgRRW9A5f4Jpj/Fi9+n6NxtbuXGB1iU9p1ubT5\
+NXq0D3w7dVT9ekwRx/WLP2gfuSZz2/W2famoCUbKG/FnvlhlHk4UHPo9rcIjdtm7\
+IoRXwZ5rL1boPmA7b8qSY5YTTVp0t2WxsCH4yBTIcKzpPg0Ko4hBDlxX/UinKcF1\
+VnUbtUULjN3dTdaW177rOr8j78Z7Zh1yUjNgYxVhNBEZMu0U5pGXGwROdR7UJnlg\
+/bMuq07Z2uFPjABfjcKl7u1aH3yn8HtJFOWpDPJ2+fDSNJZpexhswXD/EHb5IiIk\
+nBHqTslbDmLlowgn9G6dRteoefMCYlUdMtmpertOi1RT7UxVhf3ZxF9BsCdgkA83\
+om+j0TzsqDvOJh9G4Wq+6E46dbwsJVJnbh8KOgAkKBBPox5Gqv8aWrTIEIMD1SEy\
+FbFtNyxzhL6nNMreX/pjWrpf0BwJJbZRiG0jIJ4GQ3GjHZ2O01fjMaQuQQ==\
+-----END CERTIFICATE-----";
+
+char clientkey[2048] = "-----BEGIN PRIVATE KEY-----\
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQD7WFvX+xpN16Zc\
+YzJlS0/8GOCbOu1pDu+LlBq+b55aLUEeb+qhCrztprTgNbJmei9NMXQkUS3MLB6B\
+J42kSaoDRtxowbnMNUjEDi2essjW70qwyGkqsux+1p7vIht0jCb/dnP+pwbGA+NM\
+A20VQyTKsOXM4eFKisdKXEPV8H606kncACUUpsvlcA15BT27xpwqhAoEwCBzV/l+\
+cODSxdlXKFWL19q2ek7DCyrU1U8tUTPXRisLyZWVcffFdtRvs5JcDhGsy8IAygku\
+dkYetx8fsikRqfdb8E07ru+fLfJqQ/WsqiMq76O+cqvphmv3RbZiuudDFkEg+VU7\
+FfjJ2sa9AgMBAAECggEAHcJK8YoOBbxsOpEWJO8jU75gTZDPDjrR+u04s2aE0bl8\
+9c0bcyDR2LN9w/QnoMGDuziJP0mLShrJK9KSjyqXohawPwj85iRC7s+c8CbL58Li\
+TYcVCJSxspzXqYmYxZZYgbO1LSf6gdRxA41+S1+tSgBi3Py7j3dZ/EBrWbfFUMcW\
+kTxcMYcGsDoyha6fqEDOfvoXV/LZaGR6bdnNaOngLCb/ANb7p1QXPIDTCQuUf1Cm\
+GOdp+48nZSrX1cYBXaJjOCq0qpenGY6g1LVlq7Mi6o+tT3+4sKrtdBv8Gz7myFSK\
+49FP/Hu8JFOqi5RxPbCpEbt7IHnW9K64gDi7KhiLowKBgQD+t4cYUJbtpWURCMYh\
+oYVrf5Xstwdei6yiuOrIx3JWKzmgNs8G0FLXruyqqOclnuJykcwiZqPRuYBc+y9c\
+zKpkopnKmSmWm0ezSdA/BDfME5hXduLa9lL8tSJj997lSNbV30htPB5/SLpAxYgn\
+O4NiNJ0pvj4PlQJci1Zb0f/aDwKBgQD8nHukXfHv/cyS5tB15NNaJULLPDJagClG\
+TDz98MqX8GSmINu+oCMwyVMfEIKj/hJ2l7mUanNYykTPV58Sj9OFsgAirUhG558O\
+/8bbzG24LVqA4mKtdzH8+PuwFd02S/Vfh9QIpmz1aVaaHOJH5XKQA6uoxLv4ptBy\
+iy+XVREOcwKBgQDVs5ScScDW0RTiHcJdJO6TKg/W8hg0smq8evhAS1UaBlnqmRFI\
+Xi+i1Reqdtq3LX4/MSNbGVIH+uI/IF60NOIgXGs7FxVVTiHxwdP9isRla2s8tnnN\
+yywE6NNZm/Rd2aak+RgCzZWopJPfE9sPT1cDZbEV/I6E9Ddu/VgO4TkO8QKBgBif\
+WB3pWk++OVaIUQFs0H0U7LHKqE3R+DP18mv+MIEm2WioA0NNcKCsvwFkJpe9iCcv\
+GtOwnJWnAZYEQGkaw89gTksTANyIbySTIdsCzh8JrKyrZFrsJ181FbNQLkPAm6Y4\
+Ix7EuhIhtmNHNXc0kjofYXgN1RSjjeXcU0M483SpAoGBAOY4qGEKJAMpCO6M+pL7\
+A0/oGfxOSYXtD7UlOSEpHmoBIog+WLOYZGKM8/dz8DyTuHw/nz7iSlniMiv0SQ1r\
+7VS5pp21+qYhQf00adifsCZDZ0/3k5/LMtt8TxfuEvxlTMj2R2g+0tDDPkt+JMKM\
+Z5J7Z1EEc/u1WIhKdRMAeHO8";
+
+
+
+
+buggy_cart_data_t water_tank_write_data, buggy_cart_read_data, buggy_cart_temp_data;
+
+
+usart voltage_sensor(&huart6, voltage_sensor_mutex);
+
+
+device_info_t write_device_info, read_device_info;
+
+
+device_info_t::device_info_t(void)
+{
+	memset(&write_device_info, 0, sizeof(write_device_info));
+	memset(&read_device_info, 0, sizeof(read_device_info));
+}
+
+
+device_info_t::~device_info_t(void)
+{
+
+}
+
+
+uint8_t device_info_t::load_default_values(void)
+{
+	uint8_t res = 0;
+
+//	write_device_info.communication_mode_enabled = DEFAULT_COMMUNICATION_MODE;
+
+
+	if (1 == peripherals.cellular_enable)
+	{
+		write_device_info.communication_mode_enabled = cellular_enable;
+	}
+	else if (1 == peripherals.wifi_enable)
+	{
+		write_device_info.communication_mode_enabled = wifi_enable;
+	}
+	else
+	{
+		write_device_info.communication_mode_enabled = lorawan_enable;
+	}
+
+	sprintf(write_device_info.mqtt_broker_endpoint, "%s", DEFAULT_MQTT_BROKER_ENDPOINT);
+	sprintf(write_device_info.device_uplink_telemetry_topic, "%s", DEFAULT_MQTT_UPLINK_TELEMETRY_TOPIC);
+	sprintf(write_device_info.device_downlink_topic, "%s", DEFAULT_MQTT_DOWNLINK_TOPIC);
+
+	sprintf(write_device_info.ssid, "%s", DEFAULT_WIFI_SSID);
+	sprintf(write_device_info.password, "%s", DEFAULT_WIFI_PASSWORD);
+	sprintf(write_device_info.ap_ssid, "%s", DEFAULT_WIFI_AP_SSID);
+	sprintf(write_device_info.ap_password, "%s", DEFAULT_WIFI_AP_PASSWORD);
+	sprintf(write_device_info.ap_static_ip, "%s", DEFAULT_WIFI_AP_STATIC_IP);
+
+	sprintf(write_device_info.device_name, "%s", DEFAULT_DEVICE_NAME);
+	sprintf(write_device_info.device_profile, "%s", DEFAULT_DEVICE_PROFILE);
+	sprintf(write_device_info.access_token, "%s", DEFAULT_DEVICE_ACCESS_TOKEN);
+	sprintf(write_device_info.device_id, "%s", DEFAULT_DEVICE_ID);
+
+	sprintf(write_device_info.lorawan_app_key, "%s", DEFAULT_LORAWAN_APP_KEY);
+	sprintf(write_device_info.lorawan_nwk_key, "%s", DEFAULT_LORAWAN_NETWORK_KEY);
+	sprintf(write_device_info.lorawan_app_session_key, "%s", DEFAULT_LORAWAN_APP_SESSION_KEY);
+	sprintf(write_device_info.lorawan_nwk_session_key, "%s", DEFAULT_LORAWAN_NETWORK_SESSION_KEY);
+	sprintf(write_device_info.lorawan_device_eui, "%s", DEFAULT_LORAWAN_DEVICE_EUI);
+	sprintf(write_device_info.lorawan_join_eui, "%s", DEFAULT_LORAWAN_JOIN_EUI);
+	sprintf(write_device_info.lorawan_device_address, "%s", DEFAULT_LORAWAN_DEVICE_ADDRESS);
+
+	sprintf(write_device_info.comabin_geolocator_api_key, "%s", DEFAULT_COMBAIN_GEOLOCATOR_API_KEY);
+	sprintf(write_device_info.geolocator_url, "https://apiv2.combain.com/?key=%s", write_device_info.comabin_geolocator_api_key);
+
+	sprintf(write_device_info.apn, "%s", DEFAULT_CELLULAR_APN);
+
+	write_device_info.data_sampling_frequency_in_sec = DEFAULT_DATA_SAMPLING_FREQUENCY_IN_SEC;
+
+
+	sprintf(write_device_info.hw_ver, "%s", DEFAULT_DEVICE_HARDWARE_VERSION);
+
+	sprintf(write_device_info.fw_ver, "%s", DEFAULT_DEVICE_FIRMWARE_VERSION);
+	sprintf(write_device_info.new_fw_ver, "%s", DEFAULT_DEVICE_NEW_FIRMWARE_VERSION);
+
+	write_device_info.port_number = DEFAULT_MQTT_PORT_NUMBER;
+
+	res = write_device_info.update();
+
+	return res;
+}
+
+uint8_t device_info_t::update(void)
+{
+	uint8_t res = 0;
+
+	res = eeprom.store_device_info((uint8_t *)&write_device_info, sizeof(device_info_t));
+
+	return res;
+}
+
+void device_info_t::get(void)
+{
+	uint8_t res = eeprom.get_device_info((uint8_t *)&read_device_info, sizeof(device_info_t));
+}
+
+void device_info_t::device_reboot(void)
+{
+    __disable_irq();
+    HAL_NVIC_SystemReset();
+}
+
+
+void doubleToString(double value, char* buffer, int precision)
+{
+  if (value < 0)
+  {
+    *buffer++ = '-';
+    value = -value;
+  }
+
+  long intPart = (long)value;
+
+  double frac = value - (double)intPart;
+  long fracPart = (long)(frac * pow(10, precision) + 0.5);
+
+  char temp[20];
+  sprintf(temp, "%ld.%0*ld", intPart, precision, fracPart);
+  strcpy(buffer, temp);
+}
+
+
+uint8_t process_battery_voltage(void)
+{
+	uint8_t battery_percentage = 0;
+	uint8_t battery_voltage = 0;
+
+    char* token = strtok((char *)voltage_sensor_processing_data_buffer, "V.D'\n");
+    uint8_t count = 0;
+
+    while (token != NULL)
+    {
+    	count++;
+
+    	if (1 == count)
+    	{
+    		battery_voltage = atoi(token);
+    	}
+
+        token = strtok(NULL, "V.D'\n");
+    }
+
+    battery_percentage = (battery_voltage/VEHICLE_BATTERY_PEAK_VOLTAGE) * 100;
+
+    return battery_percentage;
+}
+
+
+
+void voltage_sensor_rx_callback(UART_HandleTypeDef *huart)
+{
+	voltage_sensor_rx_byte = voltage_sensor.huart->Instance->RDR;
+
+	if (voltage_sensor_rx_byte_counter >= 16)
+	{
+		memset(&voltage_sensor_data_buffer, 0, sizeof(voltage_sensor_data_buffer));
+		voltage_sensor_rx_byte_counter = 0;
+	}
+
+	else if (voltage_sensor_rx_byte == 0)
+	{
+
+	}
+
+	else if ((voltage_sensor_rx_byte == '\n') && (voltage_sensor_rx_byte_counter <= 9))
+	{
+		voltage_sensor_data_buffer[voltage_sensor_rx_byte_counter++] = voltage_sensor_rx_byte;
+		voltage_sensor_data_buffer[voltage_sensor_rx_byte_counter++] = '\0';
+
+		memset(&voltage_sensor_processing_data_buffer, 0, sizeof(voltage_sensor_processing_data_buffer));
+		memcpy(voltage_sensor_processing_data_buffer, voltage_sensor_data_buffer, voltage_sensor_rx_byte_counter);
+
+		voltage_sensor_isr_semaphore.acquire(0);
+		voltage_sensor_isr_semaphore.release();
+	}
+
+	else if ((voltage_sensor_rx_byte == '\n') && (voltage_sensor_rx_byte_counter > 9))
+	{
+		memset(&voltage_sensor_data_buffer, 0, sizeof(voltage_sensor_data_buffer));
+		voltage_sensor_rx_byte_counter = 0;
+	}
+
+	else
+	{
+		voltage_sensor_data_buffer[voltage_sensor_rx_byte_counter++] = voltage_sensor_rx_byte;
+	}
+
+	voltage_sensor.enable_interrupt();
+}

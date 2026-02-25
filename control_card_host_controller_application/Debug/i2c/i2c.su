@@ -1,0 +1,7 @@
+../i2c/i2c.cpp:13:1:i2c::i2c(I2C_HandleTypeDef*)	16	static
+../i2c/i2c.cpp:19:1:i2c::~i2c()	16	static
+../i2c/i2c.cpp:19:1:virtual i2c::~i2c()	16	static
+../i2c/i2c.cpp:25:6:void i2c::memory_read(uint8_t*, uint16_t, uint16_t, uint16_t)	40	static
+../i2c/i2c.cpp:31:6:void i2c::memory_write(uint8_t*, uint16_t, uint16_t, uint16_t)	40	static
+../i2c/i2c.cpp:39:6:void i2c::write(uint16_t, uint8_t*, uint16_t)	32	static
+../i2c/i2c.cpp:44:6:void i2c::read(uint16_t, uint8_t*, uint16_t)	32	static

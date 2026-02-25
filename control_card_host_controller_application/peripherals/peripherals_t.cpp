@@ -1,0 +1,67 @@
+/*
+ * peripherals.cpp
+ *
+ *  Created on: Oct 1, 2025
+ *      Author: Amogh MP
+ */
+
+
+#include "peripherals_t.h"
+#include "usart_class.h"
+
+
+peripherals_t peripherals;
+
+
+
+
+peripherals_t::peripherals_t(void)
+{
+	memset((uint8_t *)&peripherals, 0, sizeof(peripherals_t));
+}
+
+
+peripherals_t::~peripherals_t()
+{
+	// TODO Auto-generated destructor stub
+}
+
+
+void peripherals_t::load_default_values(void)
+{
+	cellular_enable = 0;
+	wifi_enable = 0;
+	lorawan_enable = 1;
+
+	gps_enable = 0;
+	gnss_enable = 0;
+	lbs_enable = 0;
+
+	power_on_all_peripherals = 0;
+
+	store_to_eeprom();
+}
+
+
+void peripherals_t::store_to_eeprom(void)
+{
+	eeprom.store_peripheral_configuration_info((uint8_t *)&peripherals, sizeof(peripherals_t));
+}
+
+
+void peripherals_t::read_from_eeprom(void)
+{
+	eeprom.get_peripheral_configuration_info((uint8_t *)&peripherals, sizeof(peripherals_t));
+}
+
+
+void peripherals_t::print(void)
+{
+	debug.printf("cellular_enable: %d\r\n", cellular_enable);
+	debug.printf("wifi_enable: %d\r\n", wifi_enable);
+
+	debug.printf("gps_enable: %d\r\n", gps_enable);
+	debug.printf("gnss_enable: %d\r\n", gnss_enable);
+	debug.printf("lbs_enable: %d\r\n", lbs_enable);
+}
+

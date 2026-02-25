@@ -1,0 +1,175 @@
+/*
+ * application_logic.c
+ *
+ *  Created on: Aug 21, 2025
+ *      Author: Amogh MP
+ */
+
+
+
+
+#include "application_logic.h"
+#include "main.h"
+#include "usart.h"
+#include "lora_app.h"
+#include "utilities_def.h"
+#include "protocol.h"
+#include "utilities.h"
+
+
+
+extern UTIL_TIMER_Object_t TxTimer;
+extern UTIL_TIMER_Object_t SampleTimer;
+
+extern uint32_t current_backoff_ms;
+
+volatile uint8_t sw_pressed = 0;
+
+char debug_buffer[256] = {'\0'};
+
+uint8_t downlink_processing_buffer[256] = {0};
+uint8_t downlink_data_buffer[256] = {0};
+
+uint8_t power_up = 1;
+
+/* Global variable for tracking join attempts */
+uint32_t device_connection_retry_counter = 0;
+
+//device_config write_config;
+//device_config device_config;
+
+GPIO_PinState sw_state = GPIO_PIN_SET;
+
+
+
+void send_data_over_uart(char* str)
+{
+	MX_USART2_UART_Init();
+	HAL_UART_Transmit(&huart2, (uint8_t*)str, strlen(str), 1000);
+	HAL_UART_DeInit(&huart2);
+}
+
+
+
+uint8_t get_battery_percentage(void)
+{
+	uint8_t battery_percentage = 0;
+
+	uint32_t battery_value = ((device_config.battery_counter * 100) / NUMBER_OF_MESSAGES_PER_BATTERY_LIFE);
+
+	if (battery_value >= 100)
+	{
+		battery_value = 99;
+	}
+
+	battery_percentage = 100 - battery_value;
+
+	return battery_percentage;
+}
+
+
+void process_downlink_data(uint8_t* buffer, uint8_t payload_size)
+{
+	if ((0xB1 == buffer[0]) && (UPDATE_DEVICE_CONFIGURATION_DOWNLINK_SIZE == payload_size))
+	{
+		device_config.sample_interval = (buffer[1] << 8) | buffer[2];
+
+		memset(buffer, 0, sizeof(buffer));
+
+		erase_config_data();
+		write_config_data(&device_config);
+		HAL_Delay(500);
+		device_config_data(&device_config);
+
+		next_action.updated_configurations_received = 1;
+
+		memset(debug_buffer, '\0', sizeof(debug_buffer));
+		sprintf(debug_buffer, "Modified Sampling Interval Downlink Received: %d sec\r\n", device_config.sample_interval);
+		send_data_over_uart(debug_buffer);
+	}
+
+	else if((0xB2 == buffer[0]) && (FETCH_DEVICE_CONFIGURATION_DOWNLINK_SIZE == payload_size))
+	{
+		next_action.configuration_msg_received = 1;
+
+		sprintf(debug_buffer, "%s\r\n", "Fetch Device Config Downlink Received");
+		send_data_over_uart(debug_buffer);
+	}
+
+	else if ((0xB3 == buffer[0]) && (BATTERY_CALIBERATION_DOWNLINK_SIZE == payload_size))
+	{
+		next_action.battery_caliberation_request_received = 1;
+
+		sprintf(debug_buffer, "%s\r\n", "Battery Calibration Downlink Received");
+		send_data_over_uart(debug_buffer);
+	}
+}
+
+void check_if_user_switch_pressed(void)
+{
+
+  HAL_IWDG_Refresh(&hiwdg);
+
+  if (1 == sw_pressed)
+  {
+	  sw_pressed = 0;
+
+	  HAL_Delay(1000);
+	  sw_state =  HAL_GPIO_ReadPin(USER_SW_GPIO_Port, USER_SW_Pin);
+
+	  if (GPIO_PIN_RESET == sw_state)
+	  {
+		  HAL_Delay(1000);
+		  sw_state =  HAL_GPIO_ReadPin(USER_SW_GPIO_Port, USER_SW_Pin);
+
+		  HAL_Delay(1000);
+		  sw_state =  HAL_GPIO_ReadPin(USER_SW_GPIO_Port, USER_SW_Pin);
+
+		  if (GPIO_PIN_RESET == sw_state)
+		  {
+			  turn_on_led(BLUE);
+			  HAL_Delay(5000);
+			  turn_off_led(BLUE);
+
+			  sprintf(debug_buffer, "Restoring the device to factory defaults\r\n");
+			  send_data_over_uart(debug_buffer);
+
+			  current_backoff_ms = 2000;
+
+			  erase_config_data();
+			  device_config.new_program = 0xFF;
+			  write_config_data(&device_config);
+
+			  //TODO: make sure sample counter/battery counter is retained
+
+			  HAL_Delay(1000);
+
+
+			  UTIL_SEQ_PauseTask(1 << CFG_SEQ_Task_LmHandlerProcess);
+			  UTIL_SEQ_PauseTask(1 << CFG_SEQ_Task_LoRaSendOnTxTimerOrButtonEvent);
+
+			  HAL_Delay(1000);
+
+			  HAL_NVIC_SystemReset();
+
+		  }
+	  }
+   }
+}
+
+
+void run_application_logic(void)
+{
+	next_action.periodic_message_flag = 1;
+
+	read_humidity_and_temperature(&write_sensor_data.temperature, &write_sensor_data.humidity);
+
+	write_sensor_data.epoch_time = SysTimeGet().Seconds;
+
+	uint8_t res = store_sample(&write_sensor_data);
+
+	if (1 == res)
+	{
+		write_sensor_data.sample_number += 1;
+	}
+}

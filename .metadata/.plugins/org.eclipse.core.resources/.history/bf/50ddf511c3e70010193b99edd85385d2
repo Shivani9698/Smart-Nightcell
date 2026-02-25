@@ -1,0 +1,44 @@
+/*
+ * ws2812.h
+ *
+ *  Created on: June 16, 2025
+ *      Author: Amogh MP
+ */
+
+#ifndef SRC_MUTEX_T_H_
+#define SRC_MUTEX_T_H_
+
+
+#include "includes.h"
+
+
+typedef enum
+{
+	MUTEX_OBTAINED,
+	MUTEX_DENIED
+}mutex_status_t;
+
+class mutex_t
+{
+	public:
+		osMutexId myMutexID;
+
+		mutex_t(char * mutex_name);
+		virtual ~mutex_t();
+
+		uint8_t lock(uint32_t timeout);
+		void unlock(void);
+
+};
+
+extern mutex_t debug_uart_mutex;
+extern mutex_t rtc_mutex;
+extern mutex_t eeprom_mutex;
+extern mutex_t wifi_print_mutex;
+extern mutex_t nor_mutex;
+extern mutex_t cellular_uart_mutex;
+extern mutex_t cellular_mutex;
+extern mutex_t adc_mutex;
+extern mutex_t lorawan_uart_mutex;
+
+#endif /* SRC_MUTEX_T_H_ */

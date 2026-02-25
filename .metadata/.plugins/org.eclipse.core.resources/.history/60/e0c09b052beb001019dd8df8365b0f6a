@@ -1,0 +1,605 @@
+/*
+ * lorawan.cpp
+ *
+ *  Created on: Aug 10, 2025
+ *      Author: Amogh MP
+ */
+
+
+
+
+#include "lorawan_stm32wl.h"
+#include "external_eeprom.h"
+#include "device_info.h"
+#include "peripherals_t.h"
+#include "ArduinoJson.h"
+#include "semaphore_t.h"
+#include "realtimeclock.h"
+#include "norflash.h"
+#include "uplink_management.h"
+
+
+
+extern UART_HandleTypeDef huart2;
+
+
+lorawan_params_t lorawan(&huart2, lorawan_uart_mutex, LORA_CHIP_RESET_GPIO_Port, LORA_CHIP_RESET_Pin);
+
+
+lorawan_params_t::lorawan_params_t(UART_HandleTypeDef * uart, mutex_t& m, GPIO_TypeDef *lora_chip_reset_port, uint16_t lora_chip_reset_pin_number) :
+	usart(uart, m), mutex(m), gpio(lora_chip_reset_port, lora_chip_reset_pin_number)
+{
+
+}
+
+
+lorawan_params_t::~lorawan_params_t()
+{
+
+}
+
+
+void lorawan_params_t::initialise(void)
+{
+	deinitialise();
+
+	osDelay(250);
+
+	on();
+	init();
+	register_rx_callback(lorawan_params_t::my_callback);
+	enable_interrupt();
+}
+
+
+void lorawan_params_t::deinitialise(void)
+{
+	deinit();
+	off();
+	unregister_rx_callback();
+}
+
+
+
+uint16_t lorawan_params_t::serialize_ready_packet(char * uplink_buffer, uint16_t size)
+{
+	DynamicJsonDocument doc(128);
+
+	doc["command"] = "READY";
+
+	serializeJson(doc, uplink_buffer, size);
+
+	uint16_t length = strlen(uplink_buffer);
+
+	return length;
+}
+
+
+
+//uint16_t lorawan_params_t::serialize_connect_to_lorawan_network_packet(char * uplink_buffer, uint16_t size)
+//{
+//	DynamicJsonDocument doc(512);
+//
+//	doc["command"] = "CONNECT_TO_LORAWAN_NETWORK";
+//	doc["lorawan_app_key"] = read_device_info.lorawan_app_key;
+//	doc["lorawan_nwk_key"] = read_device_info.lorawan_nwk_key;
+//	doc["lorawan_app_session_key"] = read_device_info.lorawan_app_session_key;
+//	doc["lorawan_nwk_session_key"] = read_device_info.lorawan_nwk_session_key;
+//	doc["lorawan_device_eui"] = read_device_info.lorawan_device_eui;
+//	doc["lorawan_join_eui"] = read_device_info.lorawan_join_eui;
+//	doc["lorawan_device_address"] = read_device_info.lorawan_device_address;
+//
+//	serializeJson(doc, uplink_buffer, size);
+//
+//	uint16_t length = strlen(uplink_buffer);
+//
+//	return length;
+//}
+
+
+
+// Helper function to convert byte array to hex string
+
+void bytes_to_hex_string(uint8_t* bytes, size_t len, char* output)
+{
+    for (size_t i = 0; i < len; i++) {
+        sprintf(output + (i * 2), "%02X", bytes[i]);
+    }
+    output[len * 2] = '\0';
+}
+
+//uint16_t lorawan_params_t::serialize_connect_to_lorawan_network_packet(char * uplink_buffer, uint16_t size)
+//{
+//    // Increased capacity to account for hex string lengths (32 chars per key)
+//    DynamicJsonDocument doc(1024);
+//
+//    // Buffers to hold the converted hex strings
+//    char hex_32[33]; // For 16-byte keys (32 chars + null)
+//    char hex_16[17]; // For 8-byte EUIs (16 chars + null)
+//    char hex_8[9];   // For 4-byte DevAddr (8 chars + null)
+//
+//    doc["command"] = "CONNECT_TO_LORAWAN_NETWORK";
+//
+//    // Convert and add App Key (16 bytes)
+//    bytes_to_hex_string((uint8_t*)read_device_info.lorawan_app_key, 16, hex_32);
+//    doc["lorawan_app_key"] = (const char*)hex_32;
+//
+//    // Convert and add Nwk Key (16 bytes)
+//    bytes_to_hex_string((uint8_t*)read_device_info.lorawan_nwk_key, 16, hex_32);
+//    doc["lorawan_nwk_key"] = (const char*)hex_32;
+//
+//    // Convert and add App Session Key (16 bytes)
+//    bytes_to_hex_string((uint8_t*)read_device_info.lorawan_app_session_key, 16, hex_32);
+//    doc["lorawan_app_session_key"] = (const char*)hex_32;
+//
+//    // Convert and add Nwk Session Key (16 bytes)
+//    bytes_to_hex_string((uint8_t*)read_device_info.lorawan_nwk_session_key, 16, hex_32);
+//    doc["lorawan_nwk_session_key"] = (const char*)hex_32;
+//
+//    // Convert and add Device EUI (8 bytes)
+//    bytes_to_hex_string((uint8_t*)read_device_info.lorawan_device_eui, 8, hex_16);
+//    doc["lorawan_device_eui"] = (const char*)hex_16;
+//
+//    // Convert and add Join EUI (8 bytes)
+//    bytes_to_hex_string((uint8_t*)read_device_info.lorawan_join_eui, 8, hex_16);
+//    doc["lorawan_join_eui"] = (const char*)hex_16;
+//
+//    // Convert and add Device Address (4 bytes)
+//    bytes_to_hex_string((uint8_t*)read_device_info.lorawan_device_address, 4, hex_8);
+//    doc["lorawan_device_address"] = (const char*)hex_8;
+//
+//    serializeJson(doc, uplink_buffer, size);
+//
+//    return (uint16_t)strlen(uplink_buffer);
+//}
+
+
+
+
+uint16_t lorawan_params_t::serialize_connect_to_lorawan_network_packet(char * uplink_buffer, uint16_t size)
+{
+    DynamicJsonDocument doc(1024);
+
+    doc["command"] = "CONNECT_TO_LORAWAN_NETWORK";
+    doc["lorawan_app_key"] = read_device_info.lorawan_app_key;
+    doc["lorawan_nwk_key"] = read_device_info.lorawan_nwk_key;
+    doc["lorawan_app_session_key"] = read_device_info.lorawan_app_session_key;
+    doc["lorawan_nwk_session_key"] = read_device_info.lorawan_nwk_session_key;
+    doc["lorawan_device_eui"] = read_device_info.lorawan_device_eui;
+    doc["lorawan_join_eui"] = read_device_info.lorawan_join_eui;
+    doc["lorawan_device_address"] = read_device_info.lorawan_device_address;
+
+    serializeJson(doc, uplink_buffer, size);
+
+	uint16_t length = strlen(uplink_buffer);
+
+	return length;
+}
+
+
+uint16_t lorawan_params_t::serialize_get_time_packet(char * uplink_buffer, uint16_t size)
+{
+	DynamicJsonDocument doc(64);
+
+	doc["command"] = "GET_TIME";
+
+    serializeJson(doc, uplink_buffer, size);
+
+	uint16_t length = strlen(uplink_buffer);
+
+	return length;
+}
+
+
+
+uint8_t lorawan_params_t::parse_connect_to_lorawan_network_ack_packet(void)
+{
+	uint8_t result = 0;
+
+	DynamicJsonDocument doc(1024);
+
+	DeserializationError error = deserializeJson(doc, data_rx_processing_buffer);
+
+	if (error)
+	{
+		result = 0;
+	}
+
+	else
+	{
+		const char* command = doc["command"]; // "CONNECT_TO_LORAWAN_NETWORK_ACK"
+		const char* lorawan_app_key = doc["lorawan_app_key"];
+		const char* lorawan_nwk_key = doc["lorawan_nwk_key"];
+		const char* lorawan_app_session_key = doc["lorawan_app_session_key"];
+		const char* lorawan_nwk_session_key = doc["lorawan_nwk_session_key"];
+		const char* lorawan_device_eui = doc["lorawan_device_eui"]; // "98,3A,DC,45,23,8E,89,A3"
+		const char* lorawan_join_eui = doc["lorawan_join_eui"]; // "01,01,01,01,01,01,01,01"
+		const char* lorawan_device_address = doc["lorawan_device_address"]; // "01,30,70,E5"
+
+		if ((0 != strlen(lorawan_app_key)) && (0 != strlen(lorawan_nwk_key)) &&
+				(0 != strlen(lorawan_app_session_key)) && (0 != strlen(lorawan_nwk_session_key)) &&
+				(0 != strlen(lorawan_device_eui)) && (0 != strlen(lorawan_join_eui)) && (0 != strlen(lorawan_device_address)))
+		{
+
+//			sprintf(write_device_info.lorawan_app_key, "%s", lorawan_app_key);
+//			sprintf(write_device_info.lorawan_nwk_key, "%s", lorawan_nwk_key);
+//
+//			sprintf(write_device_info.lorawan_app_session_key, "%s", lorawan_app_session_key);
+//			sprintf(write_device_info.lorawan_nwk_session_key, "%s", lorawan_nwk_session_key);
+//
+//			sprintf(write_device_info.lorawan_device_eui, "%s", lorawan_device_eui);
+//			sprintf(write_device_info.lorawan_join_eui, "%s", lorawan_join_eui);
+//			sprintf(write_device_info.lorawan_device_address, "%s", lorawan_device_address);
+//
+//			write_device_info.update();
+//			osDelay(500);
+//			read_device_info.get();
+
+			result = 1;
+		}
+	}
+
+	return result;
+}
+
+
+uint8_t lorawan_params_t::parse_get_time_ack_packet(void)
+{
+	uint8_t result = 0;
+
+	DynamicJsonDocument doc(128);
+
+	DeserializationError error = deserializeJson(doc, data_rx_processing_buffer);
+
+	if (error)
+	{
+		result = 0;
+	}
+	else
+	{
+		const char* command = doc["command"]; // "GET_TIME_ACK"
+		long epoch_time = doc["epoch_time"]; // 1767362049
+
+		debug.printf("time received: %ld\r\n", epoch_time);
+
+		if ((epoch_time > JANUARY_1_2025_EPOCH_TIME) && (epoch_time < JANUARY_1_2050_EPOCH_TIME))
+		{
+			rtc.set_time_in_utc(epoch_time);
+
+			result = 1;
+		}
+	}
+
+	return result;
+}
+
+
+uint32_t lorawan_thread_timeout_in_sec = 0;
+uint32_t lorawan_connection_retry_counter = 0;
+uint32_t lorawan_connection_backoff_in_sec = 3600; // 1 hour
+
+
+void lorawan_params_t::process_lorawan_data(void)
+{
+	uint8_t result = 0;
+
+	if (strstr((char *)data_rx_processing_buffer, "LORAWAN_APPLICATION_RESET") != NULL)
+	{
+		lorawan.reboot_required = 0;
+		lorawan.retry_counter = 0;
+
+		lorawan.ready_status = 0;
+		lorawan.connection_status = 0;
+		lorawan.time_status = 0;
+	}
+
+	else if (strstr((char *)data_rx_processing_buffer, "READY_ACK") != NULL)
+	{
+		ready_status = 1;
+
+		lorawan_connection_retry_counter = 0;
+
+		debug.printf("READY_ACK received from stm32wl\r\n");
+	}
+
+	else if (strstr((char *)data_rx_processing_buffer, "CONNECT_TO_LORAWAN_NETWORK_NACK") != NULL)
+	{
+		debug.printf("CONNECT_TO_LORAWAN_NETWORK_NACK received from stm32wl\r\n");
+
+//		retry_counter++; // TODO: check if this is useful here because after timeout I'm resetting the device
+
+		lorawan_connection_retry_counter++;
+
+		if (lorawan_connection_retry_counter > LORAWAN_MAX_RETRY_JOIN_ATTEMPTS)
+		{
+			lorawan_connection_retry_counter = 0;
+
+			lorawan.reboot_required = 1;
+
+			debug.printf("lorawan max retry join attempts exceeded....rebooting\r\n");
+		}
+	}
+
+	else if (strstr((char *)data_rx_processing_buffer, "CONNECT_TO_LORAWAN_NETWORK_ACK") != NULL)
+	{
+		debug.printf("CONNECT_TO_LORAWAN_NETWORK_ACK received from stm32wl\r\n");
+
+		result = parse_connect_to_lorawan_network_ack_packet();
+
+		if (1 == result)
+		{
+			lorawan_connection_retry_counter = 0;
+
+			ready_status = 1;
+			connection_status = 1;
+		}
+		else
+		{
+			retry_counter++;
+		}
+	}
+
+	else if (strstr((char *)data_rx_processing_buffer, "GET_TIME_ACK") != NULL)
+	{
+		result = parse_get_time_ack_packet();
+
+		if (1 == result)
+		{
+			blue_led.on();
+
+			ready_status = 1;
+			connection_status = 1;
+			time_status = 1;
+
+			rtc.date_time_saved = 1;
+
+			if (1 == power_up)
+			{
+				write_device_info.device_start_time = rtc.get_time_in_utc();
+
+				write_device_info.update();
+				osDelay(100);
+				read_device_info.get();
+
+				power_up = 0;
+			}
+		}
+
+		else
+		{
+			retry_counter++;
+		}
+	}
+
+	else
+	{
+
+	}
+}
+
+
+void lorawan_thread_task(void const * argument)
+{
+  /* USER CODE BEGIN lorawan_thread_task */
+
+	osDelay(5000);
+
+
+  /* Infinite loop */
+  for(;;)
+  {
+	  HAL_IWDG_Refresh(&hiwdg1);
+
+	  if ((lorawan_enable == read_device_info.communication_mode_enabled) && (1 == peripherals.power_on_all_peripherals))
+	  {
+		  if (1 == lorawan.reboot_required)
+		  {
+			  debug.printf("Max lorawan retry count exceeded......Rebooting now\r\n");
+
+			  lorawan.reboot_required = 0;
+			  lorawan.retry_counter = 0;
+
+
+			  lorawan.ready_status = 0;
+			  lorawan.connection_status = 0;
+			  lorawan.time_status = 0;
+
+			  lorawan.initialise();
+		  }
+
+
+		  else if ((0 == lorawan.ready_status) && (0 == lorawan.connection_status) && (0 == lorawan.time_status))
+		  {
+			  uint16_t len = lorawan.serialize_ready_packet((char *)lorawan.data_tx_buffer, sizeof(lorawan.data_tx_buffer));
+
+			  if (len > 0)
+			  {
+				  debug.printf("stm tx data: %s\r\n", lorawan.data_tx_buffer);
+				  lorawan.printf("%s\r\n", lorawan.data_tx_buffer);
+			  }
+		  }
+
+		  else if ((1 == lorawan.ready_status) && (0 == lorawan.connection_status) && (0 == lorawan.time_status))
+		  {
+			  uint16_t len = lorawan.serialize_connect_to_lorawan_network_packet((char *)lorawan.data_tx_buffer, sizeof(lorawan.data_tx_buffer));
+
+			  if (len > 0)
+			  {
+				  debug.printf("stm tx data: %s\r\n", lorawan.data_tx_buffer);
+				  lorawan.printf("%s\r\n", lorawan.data_tx_buffer);
+			  }
+		  }
+
+		  else if ((1 == lorawan.ready_status) && (1 == lorawan.connection_status) && (0 == lorawan.time_status))
+		  {
+			  uint16_t len = lorawan.serialize_get_time_packet((char *)lorawan.data_tx_buffer, sizeof(lorawan.data_tx_buffer));
+
+			  if (len > 0)
+			  {
+				  debug.printf("stm tx data: %s\r\n", lorawan.data_tx_buffer);
+				  lorawan.printf("%s\r\n", lorawan.data_tx_buffer);
+			  }
+		  }
+
+		  else if ((1 == lorawan.ready_status) && (1 == lorawan.connection_status) && (1 == lorawan.time_status))
+		  {
+			  blue_led.toggle();
+
+			  if (0 == peripherals.start_application)
+			  {
+				  peripherals.start_application = 1;
+			  }
+
+
+			  // TODO: check for any uplinks pending and flush them
+
+		  }
+
+		  if ((1 == lorawan.ready_status) && (1 == lorawan.connection_status) && (1 == lorawan.time_status))
+		  {
+			  blue_led.toggle();
+
+			  if (1 == cellular_mutex.lock(1000))
+			  {
+				  write_index = eeprom.read_int(START_ADDRESS_OF_WRITE_COUNTER_INDEX);
+				  write_page_counter = eeprom.storage_counter_read(write_index);
+
+				  read_index = eeprom.read_int(START_ADDRESS_OF_READ_COUNTER_INDEX);
+				  read_page_counter = eeprom.reader_counter_read(read_index);
+
+				  if(read_page_counter % FOUR_MILLION == 0)
+				  {
+					  read_index = read_page_counter / FOUR_MILLION;
+
+					  eeprom.write_int(read_index , START_ADDRESS_OF_READ_COUNTER_INDEX);
+				  }
+
+				  if (read_page_counter < write_page_counter)
+				  {
+					  memset(&water_tank_read_data_buffer, 0, sizeof(water_tank_read_data_buffer));
+					  nor.read_data_packets(water_tank_read_data_buffer);
+
+					  memcpy(&water_tank_read_data, water_tank_read_data_buffer, sizeof(water_tank_read_data_buffer));
+
+					  uint16_t length = serialize_water_tank_data_payload_packet((char *)lorawan.data_tx_buffer, sizeof(lorawan.data_tx_buffer));
+
+					  if (length > 0)
+					  {
+						  debug.printf("stm tx data: ");
+
+						  for (uint8_t i = 0 ; i < length ; i++)
+						  {
+							  debug.printf("02X", lorawan.data_tx_buffer);
+						  }
+
+						  lorawan.send_bytes(lorawan.data_tx_buffer, length);
+
+//						  if (1 == result)
+//						  {
+//							  debug.printf("Successfully published data to topic: %s -> %s\r\n", read_device_info.device_uplink_telemetry_topic, lte.uplink_message_buffer);
+//
+//							  lte.error_counter = 0;
+//
+							  read_page_counter++;
+							  eeprom.reader_counter_write(read_page_counter, read_index);
+//						  }
+					  }
+				  }
+
+				  cellular_mutex.unlock();
+			  }
+		  }
+
+
+
+		  if (lorawan.retry_counter >= MAX_LORAWAN_RETRY_COUNTER)
+		  {
+			  lorawan.reboot_required = 1;
+		  }
+	  }
+
+
+	  // TODO: there is 1 issue what if the stm32wl reboot, it's respective action will be taken post osDelay(sleep_time) and what if sleep_time is very large.
+
+	  if ((1 == lorawan.ready_status) && (0 == lorawan.connection_status) && (0 == lorawan.time_status))
+	  {
+		  lorawan_thread_timeout_in_sec = (lorawan_thread_timeout_in_sec * 2 <= lorawan_connection_backoff_in_sec) ?
+					lorawan_thread_timeout_in_sec * 2 : lorawan_connection_backoff_in_sec;
+	  }
+	  else
+	  {
+		  lorawan_thread_timeout_in_sec = 10;
+	  }
+
+
+	  debug.printf("lorawan_thread_timeout_in_sec: %d\r\n", lorawan_thread_timeout_in_sec);
+	  osDelay(lorawan_thread_timeout_in_sec * 1000);
+  }
+  /* USER CODE END lorawan_thread_task */
+}
+
+
+void lorawan_processing_task(void const * argument)
+{
+  /* USER CODE BEGIN lorawan_processing_task */
+  /* Infinite loop */
+  for(;;)
+  {
+	  HAL_IWDG_Refresh(&hiwdg1);
+
+	  if (1 == lorawan_isr_semaphore.acquire(1000))
+	  {
+		  lorawan.process_lorawan_data();
+	  }
+
+	  osDelay(1000);
+  }
+  /* USER CODE END lorawan_processing_task */
+}
+
+
+
+void lorawan_params_t::my_callback(UART_HandleTypeDef * uart)
+{
+	lorawan.rx_byte = lorawan.huart->Instance->RDR;
+
+	if(lorawan.rx_counter >= (MAX_LORAWAN_BUFFER_SIZE - 4))
+	{
+		lorawan.rx_counter = 0;
+	}
+
+//	if(lorawan.rx_byte == 0) // TODO: check if this is necessary because, 0 can also be a part of the payload which is in hex format
+//	{
+//
+//	}
+
+	else if(lorawan.rx_byte == '\n')
+	{
+		lorawan.data_rx_buffer[lorawan.rx_counter++] = lorawan.rx_byte;
+		lorawan.data_rx_buffer[lorawan.rx_counter++] = '\0';
+
+		if(lorawan.rx_counter > 6)
+		{
+			memset(lorawan.data_rx_processing_buffer, 0, sizeof(lorawan.data_rx_processing_buffer));
+			memcpy(lorawan.data_rx_processing_buffer, lorawan.data_rx_buffer, lorawan.rx_counter);
+
+			lorawan.rx_counter = 0;
+
+			lorawan_isr_semaphore.acquire(0);
+			lorawan_isr_semaphore.release();
+		}
+
+		else
+		{
+			lorawan.rx_counter = 0;
+		}
+
+	}
+
+	else
+	{
+		lorawan.data_rx_buffer[lorawan.rx_counter++] = lorawan.rx_byte;
+	}
+
+	HAL_UART_Receive_IT(lorawan.huart, (uint8_t *)&lorawan.usart_rx_byte, 1);
+}

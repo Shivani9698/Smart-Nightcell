@@ -1,0 +1,556 @@
+Water Level Monitoring V1.0.1 Protocol Document:
+
+
+
+1) Start-Up Packet: Uplink Packet (device -> thingsboard)
+
+1.1) Cellular/WiFi Packet:
+
+{"command":"STARTUP_MESSAGE","device_id":"1234567890","reboot_reason":"software_reset","device_power_source":"mains","device_battery_percentage":97,
+"epoch_time":234567890,"sampling_frequency":30,"wifi_enabled":1,"mac_id":"12-34-56-78-90-12","connected_ap_ssid":"abc123","connected_ap_password":"abc123","ip_address":"192.168.0.1",
+"cellular_enabled":1,"imei":"1567890","ccid":"1234567890","signal_strength":-10,
+"lorawan_enabled":1,"device_eui":"12-34-56-78-90","join_eui":"12-34-56-78-90",
+"gps_enabled":1,"lbs_enabled":1,"hardware_version":"1.0.1","firmware_version":"1.0.1","reserved_1":"reserved_1_value","reserved_2":"reserved_2_value",
+"reserved_3":"reserved_3_value"}
+
+
+1.2) LoRaWAN Packet:
+
+F90114A10901202600000001050164118968693C0000010A
+
+F9 - start_byte
+01 - uplink
+14 = 20 (dec) = size of actual data payload (without header and newline character)
+
+A1 -> startup_message
+0901202600000001 -> device_eui/device_id
+05 -> reboot_reason (possible values: 0, 1, 2, 3, 4, 5, 6, 7)
+01 -> device_power_source(possible values: 0, 1)
+64 -> device_battery_percentage
+11896869 -> epoch time
+3C00 -> sampling_frequency (in seconds)
+00 -> gps_enabled (possible values: 0, 1)
+01 -> lbs_enabled (possible values: 0, 1)
+0A -> newline character (terminating character)
+
+
+
+
+
+2) Health Packet: Uplink Packet (device -> thingsboard)
+
+2.1) Cellular/WiFi Packet:
+
+{"command":"HEALTH","device_id":"1234567890","device_start_time":1234567890,"device_power_source":"mains","device_battery_percentage":97,"epoch_time":234567890,
+"sampling_frequency":30,"wifi_enabled":1,"mac_id":"12-34-56-78-90-12","connected_ap_ssid":"abc123","connected_ap_password":"abc123","ip_address":"192.168.0.1",
+"cellular_enabled":1,"imei":"1567890","ccid":"1234567890","signal_strength":-10,
+"lorawan_enabled":1,"device_eui":"12-34-56-78-90","join_eui":"12-34-56-78-90",
+"gps_enabled":1,"lbs_enabled":1,"hardware_version":"1.0.1","firmware_version":"1.0.1","reserved_1":"reserved_1_value","reserved_2":"reserved_2_value",
+"reserved_3":"reserved_3_value"}
+
+
+2.2) LoRaWAN Packet:
+
+F90117A20901202600000001118968690164118968693C0000010A
+
+F9 - start_byte
+01 - uplink
+17 = 23 (dec) = size of actual data payload (without header and newline character)
+
+A2 -> health_message
+0901202600000001 -> device_eui/device_id
+11896869 -> device_start_time
+01 -> device_power_source(possible values: 0, 1)
+64 -> device_battery_percentage
+11896869 -> epoch time
+3C00 -> sampling_frequency (in seconds)
+00 -> gps_enabled (possible values: 0, 1)
+01 -> lbs_enabled (possible values: 0, 1)
+0A -> newline character (terminating character)
+
+
+
+
+
+3) Set Config: Downlink Packet (thingsboard -> device)
+
+3.1) Cellular/WiFi Packet:
+
+{"command":"SET_CONFIG","device_id":"1234567890","epoch_time":234567890,"sampling_frequency":30,"max_tank_capacity":300000,"tank_length":10,"tank_width":10,"tank_height":6,"wifi_enabled":1,"cellular_enabled":1,"lorawan_enabled":1,"gps_enabled":1,"lbs_enabled":1}
+
+
+3.2) LoRaWAN Packet:
+
+F9021BB10901202600000001118968693C00E09304000A0A0600000100000A
+
+F9 - start_byte
+02 - downlink
+1B = 27 (dec) = size of actual data payload (without header and newline character)
+
+
+B1 -> set_config
+0901202600000001 -> device_eui/device_id
+11896869 -> epoch_time
+3C00 -> sampling_frequency (in seconds)
+E0930400  -> max_tank_capacity (in litres)
+0A -> tank length (in meteres)
+0A -> tank width (in meteres)
+06 -> tank height (in meteres)
+00 -> wifi_enabled (possible values: 0, 1)
+00 -> cellular_enabled (possible values: 0, 1)
+01 -> lorawan_enabled (possible values: 0, 1)
+00 -> gps_enabled (possible values: 0, 1)
+00 -> lbs_enabled (possible values: 0, 1)
+0A -> newline character (terminating character)
+
+
+
+
+
+4) Set Config ACK: Uplink Packet (device -> thingsboard)
+
+4.1) Cellular/WiFi Packet:
+
+{"command":"SET_CONFIG_ACK","device_id":"1234567890","epoch_time":234567890,"sampling_frequency":30,"max_tank_capacity":300000,"tank_length":10,"tank_width":10,"tank_height":6,"wifi_enabled":1,"cellular_enabled":1,"lorawan_enabled":1,"gps_enabled":1,"lbs_enabled":1}
+
+
+4.2) LoRaWAN Packet:
+
+F9011BA30901202600000001118968693C00E09304000A0A0600000100000A
+
+F9 - start_byte
+01 - uplink
+1B = 27 (dec) = size of actual data payload (without header and newline character)
+
+A3 -> set_config_ack
+0901202600000001 -> device_eui/device_id
+11896869 -> epoch_time
+3C00 -> sampling_frequency (in seconds)
+E0930400 -> max_tank_capacity (in litres)
+0A -> tank length (in meteres)
+0A -> tank width (in meteres)
+06 -> tank height (in meteres)
+00 -> wifi_enabled (possible values: 0, 1)
+00 -> cellular_enabled (possible values: 0, 1)
+01 -> lorawan_enabled (possible values: 0, 1)
+00 -> gps_enabled (possible values: 0, 1)
+00 -> lbs_enabled (possible values: 0, 1)
+0A -> newline character (terminating character)
+
+
+
+
+
+5) Get Config: Downlink Packet (thingsboard -> device)
+
+5.1) Cellular/WiFi Packet:
+
+{"command":"GET_CONFIG","device_id":"1234567890"}
+
+
+5.2) LoRaWAN Packet:
+
+F90209B209012026000000010A
+
+F9 - start_byte
+02 - downlink
+09 = 09 (dec) = size of actual data payload (without header and newline character)
+
+B2 -> get_config
+0901202600000001 -> device_eui/device_id
+0A -> newline character (terminating character)
+
+
+
+
+
+6) Get Config ACK: Uplink Packet (device -> thingsboard)
+
+6.1) Cellular/WiFi Packet:
+
+{"command":"GET_CONFIG_ACK","device_id":"1234567890","epoch_time":234567890,"sampling_frequency":30,"max_tank_capacity":300000,"tank_length":10,"tank_width":10,"tank_height":6,"wifi_enabled":1,"cellular_enabled":1,"lorawan_enabled":1,"gps_enabled":1,"lbs_enabled":1}
+
+
+6.2) LoRaWAN Packet:
+
+F9011BA40901202600000001118968693C00E09304000A0A0600000100000A
+
+F9 - start_byte
+01 - uplink
+1B = 27 (dec) = size of actual data payload (without header and newline character)
+
+A4 -> get_config_ack
+0901202600000001 -> device_eui/device_id
+11896869 -> epoch_time
+3C00 -> sampling_frequency (in seconds)
+E0930400 -> max_tank_capacity (in litres)
+0A -> tank length (in meteres)
+0A -> tank width (in meteres)
+06 -> tank height (in meteres)
+00 -> wifi_enabled (possible values: 0, 1)
+00 -> cellular_enabled (possible values: 0, 1)
+01 -> lorawan_enabled (possible values: 0, 1)
+00 -> gps_enabled (possible values: 0, 1)
+00 -> lbs_enabled (possible values: 0, 1)
+0A -> newline character (terminating character)
+
+
+
+
+7) Configure APN: Downlink Packet (thingsboard -> device)
+
+7.1) Cellular/WiFi Packet:
+
+{"command":"CONFIGURE_APN","device_id":"1234567890","epoch_time":234567890,"apn":"jiociot2"}
+
+
+7.2) LoRaWAN Packet:
+
+F9021DB30901202600000001118968696A696F63696F743200000000000000000A
+
+F9 - start_byte
+02 - downlink
+1D = 29 (dec) = size of actual data payload (without header and newline character)
+
+B3 -> configure_apn
+0901202600000001 -> device_eui/device_id
+11896869 -> epoch_time
+6A696F63696F74320000000000000000 -> apn (jiociot2)
+0A -> newline character (terminating character)
+
+
+
+
+
+8) Configure APN ACK: Uplink Packet (device -> thingsboard)
+
+8.1) Cellular/WiFi Packet:
+
+{"command":"CONFIGURE_APN_ACK","device_id":"1234567890","epoch_time":234567890,"apn":"jiociot2"}
+
+
+8.2) LoRaWAN Packet:
+
+F9021DA509012026000000011189686900000000000000006A696F63696F74320A
+
+F9 - start_byte
+01 - uplink
+1D = 29 (dec) = size of actual data payload (without header and newline character)
+
+A5 -> configure_apn_ack
+0901202600000001 -> device_eui/device_id
+11896869 -> epoch_time
+00000000000000006A696F63696F7432 -> apn
+0A -> newline character (terminating character)
+
+
+
+
+
+9) Reboot: Downlink Packet (thingsboard -> device)
+
+9.1) Cellular/WiFi Packet:
+
+{"command":"REBOOT","device_id":"1234567890"}
+
+
+9.2) LoRaWAN Packet:
+
+F90209B409012026000000010A
+
+F9 - start_byte
+02 - downlink
+09 = 09 (dec) = size of actual data payload (without header and newline character)
+
+B4 -> reboot
+0901202600000001 -> device_eui/device_id
+0A -> newline character (terminating character)
+
+
+
+
+
+10) Reboot ACK: Uplink Packet (device -> thingsboard)
+
+10.1) Cellular/WiFi Packet:
+
+{"command":"REBOOT_ACK","device_id":"1234567890"}
+
+
+10.2) LoRaWAN Packet:
+
+F90109A609012026000000010A
+
+F9 - start_byte
+01 - uplink
+09 = 09 (dec) = size of actual data payload (without header and newline character)
+
+A6 -> reboot_ack
+0901202600000001 -> device_eui/device_id
+0A -> newline character (terminating character)
+
+
+
+
+
+11) Reset to Factory Defaults: Downlink Packet (thingsboard -> device)
+
+11.1) Cellular/WiFi Packet:
+
+{"command":"RESET_TO_FACTORY_DEFAULTS","device_id":"1234567890"}
+
+
+11.2) LoRaWAN Packet:
+
+F90209B509012026000000010A
+
+F9 - start_byte
+02 - downlink
+09 = 09 (dec) = size of actual data payload (without header and newline character)
+
+B5 -> reset_to_factory_defaults
+0901202600000001 -> device_eui/device_id
+0A -> newline character (terminating character)
+
+
+
+
+
+12) Reset to Factory Defaults ACK: Uplink Packet (device -> thingsboard)
+
+12.1) Cellular/WiFi Packet:
+
+{"command":"RESET_TO_FACTORY_DEFAULTS_ACK","device_id":"1234567890"}
+
+
+12.2) LoRaWAN Packet:
+
+F90109A709012026000000010A
+
+F9 - start_byte
+01 - uplink
+09 = 09 (dec) = size of actual data payload (without header and newline character)
+
+A7 -> reset_to_factory_defaults_ack
+0901202600000001 -> device_eui/device_id
+0A -> newline character (terminating character)
+
+
+
+
+
+13) Turn-Off Edge Device: Downlink Packet (thingsboard -> device)
+
+13.1) Cellular/WiFi Packet:
+
+{"command":"TURN_OFF_EDGE_DEVICE","device_id":"1234567890"}
+
+
+13.2) LoRaWAN Packet:
+
+F90209B609012026000000010A
+
+F9 - start_byte
+02 - downlink
+09 = 09 (dec) = size of actual data payload (without header and newline character)
+
+B6 -> turn_off_edge_device
+0901202600000001 -> device_eui/device_id
+0A -> newline character (terminating character)
+
+
+
+
+
+14) Turn-Off Edge Device ACK: Uplink Packet (device -> thingsboard)
+
+14.1) Cellular/WiFi Packet:
+
+{"command":"TURN_OFF_EDGE_DEVICE_ACK","device_id":"1234567890"}
+
+
+14.2) LoRaWAN Packet:
+
+F90109A809012026000000010A
+
+F9 - start_byte
+01 - uplink
+09 = 09 (dec) = size of actual data payload (without header and newline character)
+
+A8 -> turn_off_edge_device_ack
+0901202600000001 -> device_eui/device_id
+0A -> newline character (terminating character)
+
+
+
+
+
+15) Data Packet: Uplink Packet (device -> thingsboard) (Telemetry)
+
+15.1) Cellular/WiFi Packet:
+
+{"command":"DATA_PAYLOAD","device_id":"1234567890","device_power_source":"mains","device_battery_percentage":98,"sample_packet_number":1234,"epoch_time":234567890,
+"sampling_frequency":30,"water_level":9753}
+
+
+15.2) LoRaWAN Packet:
+
+F90117A909012026000000010164443322114433221122111926000A
+
+F9 - start_byte
+01 - uplink
+17 = 23 (dec) = size of actual data payload (without header and newline character)
+
+A9 -> data_payload
+0901202600000001 -> device_eui/device_id
+01 -> device_power_source(possible values: 0, 1)
+64 -> device_battery_percentage
+444332211 -> sample_packet_number
+444332211 -> epoch time
+2211 -> sampling_frequency (in seconds)
+1926 -> water level (26191 = 9753 = 97.53%)
+0A -> newline character (terminating character)
+
+
+
+
+
+16) Set LoRaWAN Config: Downlink Packet (thingsboard -> device)
+
+16.1) Cellular/WiFi Packet:
+
+{"command":"SET_LORAWAN_CONFIG","device_id":"1234567890","epoch_time":234567890,"lorawan_app_key":"237E7DE71BFC536FC30F18A02B925DE6",
+"lorawan_nwk_key":"237E7DE71BFC536FC30F18A02B925DE6",
+"lorawan_app_session_key":"237E7DE71BFC536FC30F18A02B925DE6",
+"lorawan_nwk_session_key":"237E7DE71BFC536FC30F18A02B925DE6",
+"lorawan_device_eui":"983ADC45238E89A3",
+"lorawan_join_eui":"0101010101010101",
+"lorawan_device_address":"013070E5"}
+
+
+16.2) LoRaWAN Packet:
+
+F90261B709012026000000011189686934FBA5B1B48E84A8889CE9CDDBC8A56E34FBA5B1B48E84A8889CE9CDDBC8A56E34FBA5B1B48E84A8889CE9CDDBC8A56E34FBA5B1B48E84A8889CE9CDDBC8A56E20012026000000010101010101010101332211000A
+
+F90261B72001202600000001118968691D72EDF9392A91FC4A4F0C01AA133E191D72EDF9392A91FC4A4F0C01AA133E191D72EDF9392A91FC4A4F0C01AA133E191D72EDF9392A91FC4A4F0C01AA133E1909012026000000010101010101010101332211000A
+
+F9 - start_byte
+02 - downlink
+61 = 97 (dec) = size of actual data payload (without header and newline character)
+
+B7 -> set_lorawan_config
+0901202600000001 -> current device_eui/device_id
+11896869 -> epoch_time
+34FBA5B1B48E84A8889CE9CDDBC8A56E -> new lorawan_app_key
+34FBA5B1B48E84A8889CE9CDDBC8A56E -> new lorawan_nwk_key
+34FBA5B1B48E84A8889CE9CDDBC8A56E -> new lorawan_app_session_key
+34FBA5B1B48E84A8889CE9CDDBC8A56E -> new lorawan_nwk_session_key
+2001202600000001 -> new lorawan_device_eui (new device to join)
+0101010101010101 -> new lorawan_join_eui
+33221100 -> new lorawan_device_address
+0A -> newline character (terminating character)
+
+
+
+
+
+17) Set LoRaWAN Config ACK Packet: Uplink Packet (device -> thingsboard)
+
+17.1) Cellular/WiFi Packet:
+
+{"command": "SET_LORAWAN_CONFIG_ACK","device_id": "amp_device","epoch_time": 1767370190,"lorawan_app_key": "237E7DE71BFC536FC30F18A02B925DE6","lorawan_nwk_key": "237E7DE71BFC536FC30F18A02B925DE6","lorawan_app_session_key": "237E7DE71BFC536FC30F18A02B925DE6","lorawan_nwk_session_key": "237E7DE71BFC536FC30F18A02B925DE6","lorawan_device_eui": "983ADC45238E89A3","lorawan_join_eui": "0101010101010101","lorawan_device_address": "013070E5"}
+
+17.2) LoRaWAN Packet:
+
+F90161AA0901202600000001118968691D72EDF9392A91FC4A4F0C01AA133E191D72EDF9392A91FC4A4F0C01AA133E191D72EDF9392A91FC4A4F0C01AA133E191D72EDF9392A91FC4A4F0C01AA133E1909012026000000010101010101010101332211000A
+
+F9 - start_byte
+01 - uplink
+61 = 97 (dec) = size of actual data payload (without header and newline character)
+
+AA -> set_lorawan_config_ack
+0901202600000001 -> device_eui/device_id
+11896869 -> epoch_time
+1D72EDF9392A91FC4A4F0C01AA133E19 -> lorawan_app_key
+1D72EDF9392A91FC4A4F0C01AA133E19 -> lorawan_nwk_key
+1D72EDF9392A91FC4A4F0C01AA133E19 -> lorawan_app_session_key
+1D72EDF9392A91FC4A4F0C01AA133E19 -> lorawan_nwk_session_key
+0901202600000001 -> lorawan_device_eui
+0101010101010101 -> lorawan_join_eui
+33221100 -> lorawan_device_address
+0A -> newline character (terminating character)
+
+
+
+
+
+18) Configure MQTT/MQTTS Endpoint: Downlink Packet (thingsboard -> device)
+
+{"command":"CONFIGURE_MQTT_ENDPOINT","device_id":"1234567890","epoch_time":234567890,"mqtt_endpoint":"devices.antzsystems.com","mqtt_endpoint_port_number":8883,"username":",djvkajdc","password":"SKDjcnksC","uplink_topic":"v1/devices/me/telemetry/swjefcbwksc","downlink_topic":"v1/devices/me/attributes/swjefcbwksc"}
+
+
+19) Configure MQTT/MQTTS Endpoint ACK: Uplink Packet (device -> thingsboard)
+
+{"command":"CONFIGURE_MQTT_ENDPOINT_ACK","device_id":"1234567890","epoch_time":234567890,"mqtt_endpoint":"devices.antzsystems.com","mqtt_endpoint_port_number":8883,"username":",djvkajdc","password":"SKDjcnksC","uplink_topic":"v1/devices/me/telemetry/swjefcbwksc","downlink_topic":"v1/devices/me/attributes/swjefcbwksc"}
+
+
+
+
+
+STM32H7 Host Controller - STM32WL LoRaWAN Controller Protocol:
+
+
+1) Application Reset Packet:
+
+STM32WL -> STM32H7
+{"command":"LORAWAN_APPLICATION_RESET"}
+
+
+
+2) Ready Packet:
+
+STM32H7 -> STM32WL
+{"command":"READY"}
+
+STM32WL -> STM32H7
+{"command":"READY_ACK"}
+
+
+
+3) Connect to LoRaWAN Network:
+
+STM32H7 -> STM32WL
+{"command":"CONNECT_TO_LORAWAN_NETWORK","lorawan_app_key":"23,7E,7D,E7,1B,FC,53,6F,C3,0F,18,A0,2B,92,5D,E6","lorawan_nwk_key":"23,7E,7D,E7,1B,FC,53,6F,C3,0F,18,A0,2B,92,5D,E6","lorawan_app_session_key":"23,7E,7D,E7,1B,FC,53,6F,C3,0F,18,A0,2B,92,5D,E6","lorawan_nwk_session_key":"23,7E,7D,E7,1B,FC,53,6F,C3,0F,18,A0,2B,92,5D,E6","lorawan_device_eui":"98,3A,DC,45,23,8E,89,A3","lorawan_join_eui":"01,01,01,01,01,01,01,01","lorawan_device_address":"01,30,70,E5"}
+
+{"command":"CONNECT_TO_LORAWAN_NETWORK","lorawan_app_key":"237E7DE71BFC536FC30F18A02B925DE6","lorawan_nwk_key":"237E7DE71BFC536FC30F18A02B925DE6","lorawan_app_session_key":"237E7DE71BFC536FC30F18A02B925DE6","lorawan_nwk_session_key":"237E7DE71BFC536FC30F18A02B925DE6","lorawan_device_eui":"983ADC45238E89A3","lorawan_join_eui":"0101010101010101","lorawan_device_address":"013070E5"}
+
+
+STM32WL -> STM32H7 (if join fails)
+{"command":"CONNECT_TO_LORAWAN_NETWORK_NACK"}
+
+STM32WL -> STM32H7 (if join success - send with actual keys post joining)
+{"command":"CONNECT_TO_LORAWAN_NETWORK_ACK","lorawan_app_key":"23,7E,7D,E7,1B,FC,53,6F,C3,0F,18,A0,2B,92,5D,E6","lorawan_nwk_key":"23,7E,7D,E7,1B,FC,53,6F,C3,0F,18,A0,2B,92,5D,E6","lorawan_app_session_key":"23,7E,7D,E7,1B,FC,53,6F,C3,0F,18,A0,2B,92,5D,E6","lorawan_nwk_session_key":"23,7E,7D,E7,1B,FC,53,6F,C3,0F,18,A0,2B,92,5D,E6","lorawan_device_eui":"98,3A,DC,45,23,8E,89,A3","lorawan_join_eui":"01,01,01,01,01,01,01,01","lorawan_device_address":"01,30,70,E5"}
+
+{"command":"CONNECT_TO_LORAWAN_NETWORK_ACK","lorawan_app_key":"237E7DE71BFC536FC30F18A02B925DE6","lorawan_nwk_key":"237E7DE71BFC536FC30F18A02B925DE6","lorawan_app_session_key":"237E7DE71BFC53,6FC30F18A02B925DE6","lorawan_nwk_session_key":"237E7DE71BFC536FC30F18A02B925DE6","lorawan_device_eui":"983ADC45238E89A3","lorawan_join_eui":"0101010101010101","lorawan_device_address":"013070E5"}
+
+
+
+4) Fetch Epoch Time:
+
+STM32H7 -> STM32WL
+{"command":"GET_TIME"}
+
+STM32WL -> STM32H7
+{"command":"GET_TIME_ACK","epoch_time":1767362049}
+
+
+5) Uplink Payload TX ACK:
+
+STM32WL -> STM32H7
+{"command":"UPLINK_PAYLOAD_TX_ACK","epoch_time":1767362049}
+
+
+6) Uplink Payload TX NACK:
+
+STM32WL -> STM32H7
+{"command":"UPLINK_PAYLOAD_TX_NACK","epoch_time":1767362049}

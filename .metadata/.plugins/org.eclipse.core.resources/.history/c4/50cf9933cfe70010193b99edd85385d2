@@ -1,0 +1,99 @@
+/*
+ * radar_sensor.h
+ *
+ *  Created on: Aug 8, 2025
+ *      Author: Amogh MP
+ */
+
+#ifndef RADAR_SENSOR_H_
+#define RADAR_SENSOR_H_
+
+
+#include "main.h"
+#include "includes.h"
+#include "usart_class.h"
+#include "gpio.h"
+#include "mutex_t.h"
+
+#define MAX_PARAMETERS							5
+
+
+#define READ_COMMAND							0x03
+#define WRITE_COMMAND							0x10
+
+
+#define OFFSET_REDUCTION						40001
+
+
+#define CURRENT_LEVEL 							40002
+#define MEASURING_RANGE 						40003
+#define BASE_OFFSET 							40004
+#define BAUDRATE 								40005
+#define DEVICE_ID 								40006
+
+
+
+
+typedef enum
+{
+   invalid_response = 0,
+   params_received,
+   params_not_received,
+   crc_valid,
+   crc_invalid
+
+}sensor_respone_t;
+
+
+
+class radar_sensor_t : public usart, public gpio
+{
+	public:
+		mutex_t& mutex;
+	    gpio re1_enable_gpio;
+	    gpio de_enable_gpio;
+
+		uint16_t current_level;
+		uint16_t measuring_range;
+		uint16_t baudrate;
+		uint16_t device_id;
+		int16_t base_offset;
+
+		uint16_t percentage_of_tank_filled;
+
+
+		uint16_t rx_counter = 0;
+		uint8_t rx_byte = 0xFF;
+
+		uint8_t can_flush_data = 0;
+
+		uint8_t data_buffer[MAX_LORAWAN_BUFFER_SIZE];
+		uint8_t data_processing_buffer[MAX_LORAWAN_BUFFER_SIZE];
+		uint8_t data_tx_buffer[MAX_LORAWAN_BUFFER_SIZE];
+
+
+		radar_sensor_t(UART_HandleTypeDef * uart, mutex_t& m, GPIO_TypeDef *re_enable_port, uint16_t re_enable_pin_number , GPIO_TypeDef *de_enable_port, uint16_t de_enable_pin_number);
+		virtual ~radar_sensor_t();
+
+		void initialise();
+		void deinitialise(void);
+
+		void enable_transmit_mode(void);
+		void enable_receive_mode(void);
+
+
+		sensor_respone_t send_command_and_wait_for_response(uint32_t time_out);
+
+		void fetch_parameters(void);
+
+		uint16_t validate_crc(void);
+		void process_received_data(void);
+
+
+		static void my_callback(UART_HandleTypeDef * uart);
+};
+
+extern radar_sensor_t radar;
+
+
+#endif /* 80GHZ_RADAR_SENSOR_H_ */

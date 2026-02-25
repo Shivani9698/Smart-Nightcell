@@ -1,0 +1,75 @@
+/*
+ * realtimeclock.h
+ *
+ *  Created on: June 16, 2025
+ *      Author: Amogh MP
+ */
+
+#ifndef SRC_REALTIMECLOCK_H_
+#define SRC_REALTIMECLOCK_H_
+
+#include "includes.h"
+
+
+
+#define JANUARY_1_2025_EPOCH_TIME		1735689601
+#define JANUARY_1_2050_EPOCH_TIME		2524608001
+
+
+extern uint8_t power_status;
+extern uint8_t charge_status;
+extern uint8_t present_battery_percentage;
+
+
+extern uint32_t previous_ephemeris_download_time;
+extern uint32_t next_ephemeris_download_time;
+extern uint8_t download_ephemeris_data;
+
+
+extern RTC_HandleTypeDef hrtc;
+
+
+typedef struct
+{
+	uint8_t WeekDay;
+	uint8_t Month;
+	uint8_t Date;
+	uint8_t Year;
+	uint8_t Hours;
+	uint8_t Minutes;
+	uint8_t Seconds;
+	uint16_t year;
+
+}date_time_t;
+
+extern date_time_t current_date_time;
+
+
+class real_time_clock
+{
+	public:
+		RTC_HandleTypeDef * hrtc;
+
+		RTC_TimeTypeDef sTime;
+		RTC_DateTypeDef sDate;
+
+		uint8_t date_time_saved;
+
+		real_time_clock(RTC_HandleTypeDef * rtc_handle);
+		virtual ~real_time_clock();
+
+		void set_date_time( date_time_t datetime);
+		void set_time_in_utc(uint32_t epoch_time);
+		date_time_t get_date_time(void);
+		uint32_t get_time_in_utc(void);
+		uint8_t  read_back_up_register(uint16_t data, date_time_t date_time );
+		uint8_t  read_back_up_register_check(void);
+		uint32_t get_time_in_utc( date_time_t date_time);
+
+};
+
+void epoch_to_gmt(uint32_t date_time, char * date_time_string);
+
+extern real_time_clock rtc;
+
+#endif /* SRC_REALTIMECLOCK_H_ */

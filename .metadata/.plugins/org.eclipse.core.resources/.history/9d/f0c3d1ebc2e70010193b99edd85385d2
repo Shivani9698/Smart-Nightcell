@@ -1,0 +1,100 @@
+/*
+ * lorawan.cpp
+ *
+ *  Created on: Aug 10, 2025
+ *      Author: Amogh MP
+ */
+
+
+
+
+#include "lorawan_stm32wl.h"
+#include "external_eeprom.h"
+
+
+
+extern UART_HandleTypeDef huart2;
+
+
+lorawan_params_t lorawan(&huart2, lorawan_uart_mutex, LORA_CHIP_RESET_GPIO_Port, LORA_CHIP_RESET_Pin);
+
+
+lorawan_params_t::lorawan_params_t(UART_HandleTypeDef * uart, mutex_t& m, GPIO_TypeDef *lora_chip_reset_port, uint16_t lora_chip_reset_pin_number) :
+	usart(uart, m), mutex(m), gpio(lora_chip_reset_port, lora_chip_reset_pin_number)
+{
+
+}
+
+
+lorawan_params_t::~lorawan_params_t()
+{
+
+}
+
+
+void lorawan_params_t::initialise(void)
+{
+	deinitialise();
+
+	osDelay(250);
+
+	on();
+	init();
+	register_rx_callback(lorawan_params_t::my_callback);
+	enable_interrupt();
+}
+
+
+void lorawan_params_t::deinitialise(void)
+{
+	deinit();
+	off();
+	unregister_rx_callback();
+}
+
+
+
+uint8_t lorawan_params_t::load_default_values(void)
+{
+	memset(data_buffer, 0, sizeof(data_buffer));
+	memset(data_processing_buffer, 0, sizeof(data_processing_buffer));
+	memset(data_tx_buffer, 0, sizeof(data_tx_buffer));
+
+	sprintf(lorawan_app_key, "%s", DEFAULT_LORAWAN_APP_KEY);
+	sprintf(lorawan_nwk_key, "%s", DEFAULT_LORAWAN_NETWORK_KEY);
+	sprintf(lorawan_app_session_key, "%s", DEFAULT_LORAWAN_APP_SESSION_KEY);
+	sprintf(lorawan_nwk_session_key, "%s", DEFAULT_LORAWAN_NETWORK_SESSION_KEY);
+	sprintf(lorawan_device_eui, "%s", DEFAULT_LORAWAN_DEVICE_EUI);
+	sprintf(lorawan_join_eui, "%s", DEFAULT_LORAWAN_JOIN_EUI);
+	sprintf(lorawan_device_address, "%s", DEFAULT_LORAWAN_DEVICE_ADDRESS);
+
+	sprintf(fw_ver, "%s", DEFAULT_DEVICE_FIRMWARE_VERSION);
+	sprintf(new_fw_ver, "%s", DEFAULT_DEVICE_NEW_FIRMWARE_VERSION);
+
+	packet_number = 0;
+	upload_frequency_in_sec = DEFAULT_UPLOAD_FREQUENCY_IN_SEC;
+
+	update();
+}
+
+
+uint8_t lorawan_params_t::update(void)
+{
+	uint8_t res = 0;
+
+	res = eeprom.store_lorawan_credentials_info((uint8_t *)&lorawan, sizeof(lorawan_params_t));
+
+	return res;
+}
+
+
+void lorawan_params_t::get(void)
+{
+	eeprom.get_lorawan_credentials_info((uint8_t *)&lorawan, sizeof(lorawan_params_t));
+}
+
+
+void lorawan_params_t::my_callback(UART_HandleTypeDef * uart)
+{
+
+}

@@ -1,0 +1,53 @@
+Docklight Log File (ASCII) - Started 27-01-2026 15:35:36.742 
+
+27-01-2026 15:36:32.684 [RX] - SSLCFG="cacert",1,""<CR>
+<CR><LF>
+OK<CR><LF>
+
+27-01-2026 15:36:33.693 [RX] - AT+QSSLCFG="clientcert",1,""<CR>
+<CR><LF>
+OK<CR><LF>
+
+27-01-2026 15:36:34.703 [RX] - AT+QSSLCFG="clientkey",1,""<CR>
+<CR><LF>
+OK<CR><LF>
+
+27-01-2026 15:36:36.210 [RX] - AT+QFDEL="UFS:cacert.pem"<CR>
+<CR><LF>
+OK<CR><LF>
+
+27-01-2026 15:36:37.220 [RX] - AT+QFDEL="UFS:clientcert.pem"<CR>
+<CR><LF>
+OK<CR><LF>
+
+27-01-2026 15:36:38.229 [RX] - AT+QFDEL="UFS:clientkey.pem"<CR>
+<CR><LF>
+OK<CR><LF>
+
+27-01-2026 15:36:39.852 [RX] - AT+QFUPL="UFS:cacert.pem",1143,5000<CR>
+<CR><LF>
+CONNECT<CR><LF>
+
+27-01-2026 15:36:43.079 [RX] - +QFUPL: 1143,4440<CR><LF>
+<CR><LF>
+OK<CR><LF>
+
+27-01-2026 15:36:49.211 [RX] - AT+QFUPL="UFS:clientcert.pem",1648,5000<CR>
+<CR><LF>
+CONNECT<CR><LF>
+
+27-01-2026 15:36:52.484 [RX] - +QFUPL: 1648,5212<CR><LF>
+<CR><LF>
+OK<CR><LF>
+
+27-01-2026 15:36:58.616 [RX] - AT+QFUPL="UFS:clientkey.pem",1651,5000<CR>
+<CR><LF>
+CONNECT<CR><LF>
+
+27-01-2026 15:37:01.889 [RX] - +QFUPL: 1651,075a<CR><LF>
+<CR><LF>
+OK<CR><LF>
+
+
+Docklight Log File (ASCII) - Stopped 28-01-2026 07:48:49.740 
+

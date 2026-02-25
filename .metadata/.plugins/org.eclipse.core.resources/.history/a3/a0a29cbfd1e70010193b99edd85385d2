@@ -1,0 +1,98 @@
+/*
+ * lorawan.cpp
+ *
+ *  Created on: Aug 10, 2025
+ *      Author: Amogh MP
+ */
+
+
+
+
+#include "lorawan_stm32wl.h"
+#include "external_eeprom.h"
+#include "peripherals_t.h"
+
+
+
+extern UART_HandleTypeDef huart2;
+
+
+lorawan_params_t lorawan(&huart2, lorawan_uart_mutex, LORA_CHIP_RESET_GPIO_Port, LORA_CHIP_RESET_Pin);
+
+
+lorawan_params_t::lorawan_params_t(UART_HandleTypeDef * uart, mutex_t& m, GPIO_TypeDef *lora_chip_reset_port, uint16_t lora_chip_reset_pin_number) :
+	usart(uart, m), mutex(m), gpio(lora_chip_reset_port, lora_chip_reset_pin_number)
+{
+
+}
+
+
+lorawan_params_t::~lorawan_params_t()
+{
+
+}
+
+
+void lorawan_params_t::initialise(void)
+{
+	deinitialise();
+
+	osDelay(250);
+
+	on();
+	init();
+	register_rx_callback(lorawan_params_t::my_callback);
+	enable_interrupt();
+}
+
+
+void lorawan_params_t::deinitialise(void)
+{
+	deinit();
+	off();
+	unregister_rx_callback();
+}
+
+
+void lorawan_thread_task(void const * argument)
+{
+  /* USER CODE BEGIN lorawan_thread_task */
+  /* Infinite loop */
+  for(;;)
+  {
+	  HAL_IWDG_Refresh(&hiwdg1);
+
+	  if ((lorawan_enable == read_device_info.communication_mode_enabled) && (1 == peripherals.power_on_all_peripherals))
+	  {
+		  if ((0 == lorawan.ready_status) && (0 == lorawan.ttn_connection_status) && (0 == lorawan.time_status))
+		  {
+
+		  }
+
+		  else if ((1 == lorawan.ready_status) && (0 == lorawan.ttn_connection_status) && (0 == lorawan.time_status))
+		  {
+
+		  }
+
+		  else if ((1 == lorawan.ready_status) && (1 == lorawan.ttn_connection_status) && (0 == lorawan.time_status))
+		  {
+
+		  }
+
+		  else if ((1 == lorawan.ready_status) && (1 == lorawan.ttn_connection_status) && (1 == lorawan.time_status))
+		  {
+			  peripherals.start_application = 1;
+		  }
+	  }
+
+	  osDelay(1000);
+  }
+  /* USER CODE END lorawan_thread_task */
+}
+
+
+
+void lorawan_params_t::my_callback(UART_HandleTypeDef * uart)
+{
+
+}

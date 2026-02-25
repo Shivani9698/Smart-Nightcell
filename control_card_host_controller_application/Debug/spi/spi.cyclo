@@ -1,0 +1,8 @@
+../spi/spi.cpp:12:1:spi::spi(SPI_HandleTypeDef*)	1
+../spi/spi.cpp:17:1:spi::~spi()	1
+../spi/spi.cpp:17:1:virtual spi::~spi()	1
+../spi/spi.cpp:22:6:void spi::spi_transmit(uint8_t*, uint16_t)	1
+../spi/spi.cpp:26:6:void spi::spi_receive(uint8_t*, uint16_t)	1
+../spi/spi.cpp:30:9:uint8_t spi::spi_transmit_receive_byte(uint8_t)	1
+../spi/spi.cpp:39:9:uint8_t spi::spi_transmit_bytes(uint8_t*, uint16_t)	0
+../spi/spi.cpp:44:9:uint8_t spi::spi_transmit_receive_bytes(uint8_t*, uint8_t*, uint16_t)	1

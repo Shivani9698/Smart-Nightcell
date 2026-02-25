@@ -1,0 +1,118 @@
+14:54:31 **** Incremental Build of configuration Debug for project control_card_host_controller_application ****
+make -j32 all 
+arm-none-eabi-g++ "../downlink_management/downlink_t.cpp" -mcpu=cortex-m7 -std=gnu++14 -g3 -DDEBUG -DUSE_PWR_LDO_SUPPLY -DUSE_HAL_DRIVER -DSTM32H7A3xx -c -I../Core/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc/Legacy -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../Drivers/CMSIS/Include -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/usart_wrapper" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/mutex_t" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/gpio" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/real_time_clock" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/spi" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/nor_flash" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/external_eeprom" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/i2c" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/arduino_json" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/WiFi" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/semaphore" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/peripherals" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/cellular" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/downlink_management" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/adc" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/lorawan_stm32wl" -I"E:/ANTZ_Systems/100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1/control_card_host_controller_application/radar_sensor" -O0 -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti -fno-use-cxa-atexit -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"downlink_management/downlink_t.d" -MT"downlink_management/downlink_t.o" --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -o "downlink_management/downlink_t.o"
+In file included from ../downlink_management/downlink_t.cpp:13:
+../Core/Inc/device_info.h:19:1: warning: 'typedef' was ignored in this declaration
+   19 | typedef enum communication_mode_s
+      | ^~~~~~~
+../downlink_management/downlink_t.cpp: In member function 'uint8_t downlink_t::parse_set_config_downlink_command()':
+../downlink_management/downlink_t.cpp:57:37: warning: unused variable 'command' [-Wunused-variable]
+   57 |                         const char* command = doc["command"]; // "SET_CONFIG"
+      |                                     ^~~~~~~
+../downlink_management/downlink_t.cpp: In member function 'uint8_t downlink_t::parse_get_config_downlink_command()':
+../downlink_management/downlink_t.cpp:241:37: warning: unused variable 'command' [-Wunused-variable]
+  241 |                         const char* command = doc["command"]; // "SET_CONFIG"
+      |                                     ^~~~~~~
+../downlink_management/downlink_t.cpp: In member function 'uint8_t downlink_t::parse_configure_apn_downlink_command()':
+../downlink_management/downlink_t.cpp:284:29: warning: unused variable 'command' [-Wunused-variable]
+  284 |                 const char* command = doc["command"]; // "CONFIGURE_APN"
+      |                             ^~~~~~~
+../downlink_management/downlink_t.cpp: In member function 'uint8_t downlink_t::parse_reboot_downlink_command()':
+../downlink_management/downlink_t.cpp:363:37: warning: unused variable 'command' [-Wunused-variable]
+  363 |                         const char* command = doc["command"]; // "REBOOT"
+      |                                     ^~~~~~~
+../downlink_management/downlink_t.cpp: In member function 'uint8_t downlink_t::parse_reset_to_factory_defaults_downlink_command()':
+../downlink_management/downlink_t.cpp:407:37: warning: unused variable 'command' [-Wunused-variable]
+  407 |                         const char* command = doc["command"]; // "RESET_TO_FACTORY_DEFUALTS"
+      |                                     ^~~~~~~
+../downlink_management/downlink_t.cpp: In member function 'uint8_t downlink_t::parse_turn_off_edge_device_downlink_command()':
+../downlink_management/downlink_t.cpp:451:37: warning: unused variable 'command' [-Wunused-variable]
+  451 |                         const char* command = doc["command"]; // "TURN_OFF_EDGE_DEVICE"
+      |                                     ^~~~~~~
+../downlink_management/downlink_t.cpp: In member function 'uint8_t downlink_t::parse_set_lorawan_config_downlink_command()':
+../downlink_management/downlink_t.cpp:495:37: warning: unused variable 'command' [-Wunused-variable]
+  495 |                         const char* command = doc["command"]; // "SET_LORAWAN_CONFIG"
+      |                                     ^~~~~~~
+../downlink_management/downlink_t.cpp: In member function 'uint8_t downlink_t::parse_set_config_downlink_command()':
+../downlink_management/downlink_t.cpp:131:69: warning: 'sprintf' writing a terminating nul past the end of the destination [-Wformat-overflow=]
+  131 |                 sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+      |                                                                     ^
+../downlink_management/downlink_t.cpp:131:24: note: 'sprintf' output 17 bytes into a destination of size 16
+  131 |                 sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+      |                 ~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  132 |                                 processing_buffer[4], processing_buffer[5], processing_buffer[6], processing_buffer[7], processing_buffer[8]);
+      |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../downlink_management/downlink_t.cpp: In member function 'uint8_t downlink_t::parse_get_config_downlink_command()':
+../downlink_management/downlink_t.cpp:254:69: warning: 'sprintf' writing a terminating nul past the end of the destination [-Wformat-overflow=]
+  254 |                 sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+      |                                                                     ^
+../downlink_management/downlink_t.cpp:254:24: note: 'sprintf' output 17 bytes into a destination of size 16
+  254 |                 sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+      |                 ~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  255 |                                 processing_buffer[4], processing_buffer[5], processing_buffer[6], processing_buffer[7], processing_buffer[8]);
+      |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../downlink_management/downlink_t.cpp: In member function 'uint8_t downlink_t::parse_configure_apn_downlink_command()':
+../downlink_management/downlink_t.cpp:303:69: warning: 'sprintf' writing a terminating nul past the end of the destination [-Wformat-overflow=]
+  303 |                 sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+      |                                                                     ^
+../downlink_management/downlink_t.cpp:303:24: note: 'sprintf' output 17 bytes into a destination of size 16
+  303 |                 sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+      |                 ~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  304 |                                 processing_buffer[4], processing_buffer[5], processing_buffer[6], processing_buffer[7], processing_buffer[8]);
+      |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../downlink_management/downlink_t.cpp: In member function 'uint8_t downlink_t::parse_reboot_downlink_command()':
+../downlink_management/downlink_t.cpp:376:69: warning: 'sprintf' writing a terminating nul past the end of the destination [-Wformat-overflow=]
+  376 |                 sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+      |                                                                     ^
+../downlink_management/downlink_t.cpp:376:24: note: 'sprintf' output 17 bytes into a destination of size 16
+  376 |                 sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+      |                 ~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  377 |                                 processing_buffer[4], processing_buffer[5], processing_buffer[6], processing_buffer[7], processing_buffer[8]);
+      |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../downlink_management/downlink_t.cpp: In member function 'uint8_t downlink_t::parse_reset_to_factory_defaults_downlink_command()':
+../downlink_management/downlink_t.cpp:420:69: warning: 'sprintf' writing a terminating nul past the end of the destination [-Wformat-overflow=]
+  420 |                 sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+      |                                                                     ^
+../downlink_management/downlink_t.cpp:420:24: note: 'sprintf' output 17 bytes into a destination of size 16
+  420 |                 sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+      |                 ~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  421 |                                 processing_buffer[4], processing_buffer[5], processing_buffer[6], processing_buffer[7], processing_buffer[8]);
+      |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../downlink_management/downlink_t.cpp: In member function 'uint8_t downlink_t::parse_turn_off_edge_device_downlink_command()':
+../downlink_management/downlink_t.cpp:464:69: warning: 'sprintf' writing a terminating nul past the end of the destination [-Wformat-overflow=]
+  464 |                 sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+      |                                                                     ^
+../downlink_management/downlink_t.cpp:464:24: note: 'sprintf' output 17 bytes into a destination of size 16
+  464 |                 sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+      |                 ~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  465 |                                 processing_buffer[4], processing_buffer[5], processing_buffer[6], processing_buffer[7], processing_buffer[8]);
+      |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+../downlink_management/downlink_t.cpp: In member function 'uint8_t downlink_t::parse_set_lorawan_config_downlink_command()':
+../downlink_management/downlink_t.cpp:535:69: warning: 'sprintf' writing a terminating nul past the end of the destination [-Wformat-overflow=]
+  535 |                 sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+      |                                                                     ^
+../downlink_management/downlink_t.cpp:535:24: note: 'sprintf' output 17 bytes into a destination of size 16
+  535 |                 sprintf(device_id, "%02X%02X%02X%02X%02X%02X%02X%02X", processing_buffer[1], processing_buffer[2], processing_buffer[3],
+      |                 ~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  536 |                                 processing_buffer[4], processing_buffer[5], processing_buffer[6], processing_buffer[7], processing_buffer[8]);
+      |                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+arm-none-eabi-g++ -o "control_card_host_controller_application.elf" @"objects.list"   -mcpu=cortex-m7 -T"E:\ANTZ_Systems\100_Acre_VIC_Water_Level_Monitoring_Control_Card_V1.0.1\control_card_host_controller_application\STM32H7A3RITX_FLASH.ld" -Wl,-Map="control_card_host_controller_application.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -u _printf_float -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
+Finished building target: control_card_host_controller_application.elf
+ 
+arm-none-eabi-size  control_card_host_controller_application.elf 
+arm-none-eabi-objdump -h -S control_card_host_controller_application.elf  > "control_card_host_controller_application.list"
+arm-none-eabi-objcopy  -O ihex control_card_host_controller_application.elf  "control_card_host_controller_application.hex"
+   text	   data	    bss	    dec	    hex	filename
+ 236712	   6732	 311132	 554576	  87650	control_card_host_controller_application.elf
+arm-none-eabi-objcopy  -O binary control_card_host_controller_application.elf  "control_card_host_controller_application.bin"
+Finished building: default.size.stdout
+ 
+Finished building: control_card_host_controller_application.hex
+Finished building: control_card_host_controller_application.bin
+ 
+ 
+Finished building: control_card_host_controller_application.list
+ 
+
+14:54:33 Build Finished. 0 errors, 15 warnings. (took 2s.21ms)
+

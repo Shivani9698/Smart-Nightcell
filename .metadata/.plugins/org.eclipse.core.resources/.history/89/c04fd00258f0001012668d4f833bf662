@@ -1,0 +1,115 @@
+/*
+ * lorawan.h
+ *
+ *  Created on: Aug 10, 2025
+ *      Author: Amogh MP
+ */
+
+#ifndef LORAWAN_STM32WL_H_
+#define LORAWAN_STM32WL_H_
+
+
+
+#include "main.h"
+#include "includes.h"
+#include "usart_class.h"
+#include "gpio.h"
+#include "mutex_t.h"
+#include "radar_sensor.h"
+
+
+
+#define MAX_CREDENTIALS_TOKEN_LENGTH					64
+
+
+// TODO: don't change the buffer size, because in stm32wl application buffer size if is also 1024. If changed here, the same has to be updated in that application and vice-versa.
+#define MAX_LORAWAN_BUFFER_SIZE							1024
+
+
+
+#define LORAWAN_MAX_RETRY_JOIN_ATTEMPTS   				10 // approx 3 hours considering the exponential backoff
+
+#define MAX_LORAWAN_RETRY_COUNTER						5
+
+
+
+#define GENERALIZED_DATA_PAYLOAD_START_BYTE				0xF9 // TODO: cross-check this has to be changed in stm32wl application as well
+
+#define DATA_HEADER_LENGTH								3 // DATA_HEADER_LENGTH = DATA_PAYLOAD_START_BYTE + PACKET_TYPE + Actual PAYLOAD_LENGTH
+
+#define UPLINK_PACKET_TYPE								01
+#define DOWNLINK_PACKET_TYPE							02
+
+#define TANK_DATA_PAYLOAD_START_BYTE					0xA9
+#define TANK_DATA_PAYLOAD_LENGTH						23
+
+
+
+
+typedef enum
+{
+	invalid,
+	error,
+	received_ready,
+    ttn_connection_success,
+	ttn_connection_fail,
+	publish_success,
+	publish_fail,
+    ttn_data_received,
+	ttn_disconnect,
+    time_sync_success
+} lorawan_command_respone_t;
+
+extern lorawan_command_respone_t lorawan_command_response;
+
+
+
+
+class lorawan_params_t : public usart, public gpio
+{
+	public:
+	mutex_t& mutex;
+
+
+	uint8_t retry_counter;
+
+	uint8_t reboot_required;
+	uint8_t ready_status;
+	uint8_t time_status;
+	uint8_t connection_status;
+
+
+	uint8_t data_rx_buffer[MAX_LORAWAN_BUFFER_SIZE];
+	uint8_t data_rx_processing_buffer[MAX_LORAWAN_BUFFER_SIZE];
+	uint8_t data_tx_buffer[MAX_LORAWAN_BUFFER_SIZE];
+
+	uint16_t rx_counter = 0;
+	uint8_t rx_byte = 0xFF;
+
+
+	lorawan_params_t(UART_HandleTypeDef * uart, mutex_t& m, GPIO_TypeDef *lora_chip_reset_port, uint16_t lora_chip_reset_pin_number);
+	virtual ~lorawan_params_t();
+
+	void initialise(void);
+	void deinitialise(void);
+
+	uint8_t send_packet_and_wait_for_response(uint8_t * buffer, uint16_t length, uint32_t time_out);
+
+
+	uint16_t serialize_ready_packet(char * uplink_buffer, uint16_t size);
+	uint16_t serialize_connect_to_lorawan_network_packet(char * uplink_buffer, uint16_t size);
+	uint16_t serialize_get_time_packet(char * uplink_buffer, uint16_t size);
+
+	uint8_t parse_connect_to_lorawan_network_ack_packet(void);
+	uint8_t parse_get_time_ack_packet(void);
+
+	void process_lorawan_data(void);
+
+	static void my_callback(UART_HandleTypeDef * uart);
+
+};
+
+extern lorawan_params_t lorawan;
+
+
+#endif /* LORAWAN_STM32WL_H_ */

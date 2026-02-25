@@ -1,0 +1,17 @@
+../real_time_clock/realtimeclock.cpp:33:1:real_time_clock::real_time_clock(RTC_HandleTypeDef*)	1
+../real_time_clock/realtimeclock.cpp:40:1:real_time_clock::~real_time_clock()	1
+../real_time_clock/realtimeclock.cpp:40:1:virtual real_time_clock::~real_time_clock()	1
+../real_time_clock/realtimeclock.cpp:46:9:uint8_t real_time_clock::read_back_up_register(uint16_t, date_time_t)	3
+../real_time_clock/realtimeclock.cpp:73:9:uint8_t real_time_clock::read_back_up_register_check()	3
+../real_time_clock/realtimeclock.cpp:95:6:void real_time_clock::set_time_in_utc(uint32_t)	1
+../real_time_clock/realtimeclock.cpp:123:6:void real_time_clock::set_date_time(date_time_t)	2
+../real_time_clock/realtimeclock.cpp:144:13:date_time_t real_time_clock::get_date_time()	2
+../real_time_clock/realtimeclock.cpp:168:10:uint32_t real_time_clock::get_time_in_utc()	5
+../real_time_clock/realtimeclock.cpp:195:10:uint32_t real_time_clock::get_time_in_utc(date_time_t)	3
+../real_time_clock/realtimeclock.cpp:236:6:void epoch_to_gmt(uint32_t, char*)	2
+../real_time_clock/realtimeclock.cpp:252:6:void read_switch_status()	8
+../real_time_clock/realtimeclock.cpp:328:6:void start_rtc_task(const void*)	15
+../real_time_clock/realtimeclock.cpp:421:1:void __static_initialization_and_destruction_0()	1
+../real_time_clock/realtimeclock.cpp:421:1:void __static_initialization_and_destruction_1()	1
+../real_time_clock/realtimeclock.cpp:421:1:cpp)	1
+../real_time_clock/realtimeclock.cpp:421:1:cpp)	1

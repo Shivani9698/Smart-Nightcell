@@ -1,0 +1,194 @@
+/*
+ * 80ghz_radar_sensor.cpp
+ *
+ *  Created on: Aug 8, 2025
+ *      Author: Amogh MP
+ */
+
+
+
+
+#include "radar_sensor.h"
+#include "semaphore_t.h"
+#include "device_info.h"
+
+
+
+extern UART_HandleTypeDef huart3;
+
+
+sensor_respone_t response = invalid_response;
+
+radar_sensor_t radar(&huart3, radar_sensor_mutex, MODBUS_RE_GPIO_Port, MODBUS_RE_Pin, MODBUS_DE_GPIO_Port, MODBUS_DE_Pin);
+
+
+
+radar_sensor_t::radar_sensor_t(UART_HandleTypeDef * uart, mutex_t& m,
+		GPIO_TypeDef *re_enable_port, uint16_t re_enable_pin_number,
+		GPIO_TypeDef *de_enable_port, uint16_t de_enable_pin_number) :
+
+		usart(uart, m), mutex(m),
+		re1_enable_gpio(re_enable_port, re_enable_pin_number),
+		de_enable_gpio(de_enable_port, de_enable_pin_number)
+{
+
+}
+
+
+radar_sensor_t::~radar_sensor_t()
+{
+
+}
+
+
+void radar_sensor_t::initialise(void)
+{
+	deinit();
+	osDelay(200);
+	init();
+
+	register_rx_callback(radar_sensor_t::my_callback);
+}
+
+
+void radar_sensor_t::deinitialise(void)
+{
+	unregister_rx_callback();
+	deinit();
+}
+
+
+void radar_sensor_t::enable_transmit_mode(void)
+{
+	re1_enable_gpio.on();
+	de_enable_gpio.on();
+}
+
+
+void radar_sensor_t::enable_receive_mode(void)
+{
+	re1_enable_gpio.off();
+	de_enable_gpio.off();
+}
+
+
+sensor_respone_t radar_sensor_t::send_command_and_wait_for_response(uint32_t time_out)
+{
+	response = invalid_response;
+	uint32_t prev_time_in_millisec = HAL_GetTick();
+
+	enable_transmit_mode();
+	osDelay(1000); // TODO: don't change 1000.
+
+	memset(radar.data_buffer, 0, sizeof(radar.data_buffer));
+
+	send_bytes(data_tx_buffer, 8);
+
+	enable_receive_mode();
+	HAL_UART_Receive_IT(&huart3, data_buffer, 8);
+
+	uint32_t current_time_in_millisec = HAL_GetTick();
+
+	while((invalid_response == response) && ((current_time_in_millisec - prev_time_in_millisec) < time_out))
+	{
+		current_time_in_millisec = HAL_GetTick();
+
+		osDelay(1); // TODO: don't change 1.
+	}
+
+	return response;
+}
+
+
+void radar_sensor_t::fetch_parameters(void)
+{
+	initialise();
+	osDelay(200);
+
+	data_tx_buffer[0] = 0x01;
+	data_tx_buffer[1] = 0x03;
+	data_tx_buffer[2] = 0x00;
+	data_tx_buffer[3] = 0x01;
+	data_tx_buffer[4] = 0x00;
+	data_tx_buffer[5] = 0x01;
+	data_tx_buffer[6] = 0xD5;
+	data_tx_buffer[7] = 0xCA;
+
+	send_command_and_wait_for_response(1000); // TODO: don't change 1000.
+}
+
+
+uint16_t radar_sensor_t::validate_crc(void)
+{
+    uint8_t temp = 0;
+    uint16_t crc = 0xFFFF;
+
+    for (uint16_t index = 1 ; index < 6 ; index++)
+    {
+        crc ^= (uint16_t)data_processing_buffer[index];
+
+        for (int i = 0; i < 8 ; i++)
+        {
+            if (crc & 0x0001)
+            {
+                crc >>= 1;
+                crc ^= 0xA001;
+            }
+            else
+            {
+                crc >>= 1;
+            }
+        }
+    }
+
+
+    temp = (crc & 0xFF00) >> 8;
+
+    crc = ((crc & 0xFF) << 8) | temp;
+
+    return crc;
+}
+
+
+
+uint8_t radar_sensor_t::process_received_data(void)
+{
+	uint8_t result = 0;
+
+	uint16_t calculated_crc = validate_crc();
+	uint16_t crc_in_payload = (data_processing_buffer[6] << 8) | (data_processing_buffer[7]);
+
+	debug.printf("calculated_crc: %04X, crc_in_payload: %04X\r\n", calculated_crc, crc_in_payload);
+
+	if (calculated_crc == crc_in_payload)
+	{
+		current_level = (data_processing_buffer[4] << 8) | data_processing_buffer[5];
+		percentage_of_tank_filled = ((current_level / write_device_info.tank_height) * 100) * 100; // TODO: check if the tank height to be in meters or milli-meters?
+
+		water_tank_write_data.water_level_in_percentage = ((current_level / write_device_info.tank_height) * 100) * 100;
+
+		debug.printf("current_level: %04X -> %d mm -> filled_percentage: %d -> %04X\r\n",
+				current_level, current_level, percentage_of_tank_filled, percentage_of_tank_filled);
+
+		result = 1;
+	}
+
+	return result;
+}
+
+
+void radar_sensor_t::my_callback(UART_HandleTypeDef * uart)
+{
+	if ((0x00 == radar.data_buffer[0]) && (0x01 == radar.data_buffer[1]) && (0x03 == radar.data_buffer[2]))
+	{
+		response = params_received;
+
+		memset(radar.data_processing_buffer, 0, sizeof(radar.data_processing_buffer));
+		memcpy(radar.data_processing_buffer, radar.data_buffer, 8);
+
+
+		radar_sensor_data_processing_sempahore.acquire(0);
+		radar_sensor_data_processing_sempahore.release();
+	}
+
+}

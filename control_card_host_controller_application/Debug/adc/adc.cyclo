@@ -1,0 +1,10 @@
+../adc/adc.cpp:22:9:uint8_t calculate_battery_voltage(uint32_t)	79
+../adc/adc.cpp:359:1:adc::adc(ADC_HandleTypeDef*)	1
+../adc/adc.cpp:365:1:adc::~adc()	1
+../adc/adc.cpp:365:1:virtual adc::~adc()	1
+../adc/adc.cpp:371:10:uint32_t adc::read_adc()	2
+../adc/adc.cpp:392:9:uint8_t adc::read_battery_percentage_average(uint8_t)	4
+../adc/adc.cpp:412:1:void __static_initialization_and_destruction_0()	1
+../adc/adc.cpp:412:1:void __static_initialization_and_destruction_1()	1
+../adc/adc.cpp:412:1:cpp)	1
+../adc/adc.cpp:412:1:cpp)	1
