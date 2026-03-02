@@ -29,9 +29,9 @@ peripherals_t::~peripherals_t()
 
 void peripherals_t::load_default_values(void)
 {
-	cellular_enable = 0;
+	cellular_enable = 1;
 	wifi_enable = 0;
-	lorawan_enable = 1;
+	lorawan_enable = 0;
 
 	gps_enable = 0;
 	gnss_enable = 0;

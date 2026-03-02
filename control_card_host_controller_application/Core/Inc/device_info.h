@@ -233,16 +233,13 @@ typedef struct smart_night_cell_data_s
 	uint32_t packet_number;
 	uint32_t sample_epoch_time;
 
+
 	char device_power_source[16];
-
-	//uint16_t water_level_in_percentage;
-
-	int16_t temperature; //TODO:Shivani
-	uint8_t humidity;  //TODO:Shivani
-
 
 	uint8_t device_battery_percentage;
 
+	int16_t temperature; //TODO:Shivani
+	uint8_t humidity;  //TODO:Shivani
 
 	uint8_t dummy[36];
 

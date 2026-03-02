@@ -192,8 +192,13 @@
 
 
 
-extern char water_tank_write_data_buffer[WRITE_SIZE];
-extern char water_tank_read_data_buffer[WRITE_SIZE];
+//extern char water_tank_write_data_buffer[WRITE_SIZE];
+//extern char water_tank_read_data_buffer[WRITE_SIZE];
+
+
+
+extern char night_cell_write_data_buffer[WRITE_SIZE];
+extern char night_cell_read_data_buffer[WRITE_SIZE];
 
 
 

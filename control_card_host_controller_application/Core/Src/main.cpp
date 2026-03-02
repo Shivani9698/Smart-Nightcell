@@ -138,7 +138,8 @@ uint32_t time_to_sleep_in_sec = 0;
 
 uint8_t power_up = 0;
 
-
+int16_t temperature = 45;
+uint8_t humidity= 66;
 
 
 extern I2C_HandleTypeDef hi2c1;
@@ -151,31 +152,31 @@ SHT40 sht40(&i2c1_bus, 0x44 << 1);   // 8-bit address
 
 
 
-void read_and_print_sht40(void)
-   {
-       int16_t temp_x10 = 0;
-       uint8_t hum = 0;
-
-       SHT40::Status status = sht40.read(temp_x10, hum);
-
-       if (status == SHT40::Status::OK)
-       {
-           debug.printf(
-               "SHT40 | Temp: %d.%d C | Humidity: %d %%\r\n",
-               temp_x10 / 10,
-               abs(temp_x10 % 10),
-               hum
-           );
-       }
-       else if (status == SHT40::Status::CRC_ERROR)
-       {
-           debug.printf("SHT40 ERROR: CRC failure\r\n");
-       }
-       else
-       {
-           debug.printf("SHT40 ERROR: I2C failure\r\n");
-       }
-   }
+//void read_and_print_sht40(void)
+//   {
+//       int16_t temp_x10 = 0;
+//       uint8_t hum = 0;
+//
+//       SHT40::Status status = sht40.read(temp_x10, hum);
+//
+//       if (status == SHT40::Status::OK)
+//       {
+//           debug.printf(
+//               "SHT40 | Temp: %d.%d C | Humidity: %d %%\r\n",
+//               temp_x10 / 10,
+//               abs(temp_x10 % 10),
+//               hum
+//           );
+//       }
+//       else if (status == SHT40::Status::CRC_ERROR)
+//       {
+//           debug.printf("SHT40 ERROR: CRC failure\r\n");
+//       }
+//       else
+//       {
+//           debug.printf("SHT40 ERROR: I2C failure\r\n");
+//       }
+//   }
 
 
 /* USER CODE END 0 */
@@ -229,7 +230,7 @@ int main(void)
 
 
 
-  debug.printf("\r\nSHT40 Sensor Test Started\r\n");
+  //debug.printf("\r\nSHT40 Sensor Test Started\r\n");
 
 
 
@@ -264,40 +265,40 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of rtc_task */
-//  osThreadDef(rtc_task, start_rtc_task, osPriorityNormal, 0, 1024);
-//  rtc_taskHandle = osThreadCreate(osThread(rtc_task), NULL);
+  osThreadDef(rtc_task, start_rtc_task, osPriorityNormal, 0, 1024);
+  rtc_taskHandle = osThreadCreate(osThread(rtc_task), NULL);
+
+  /* definition and creation of wifi_processing */
+  osThreadDef(wifi_processing, wifi_processing_task, osPriorityNormal, 0, 1024);
+  wifi_processingHandle = osThreadCreate(osThread(wifi_processing), NULL);
+
+  /* definition and creation of wifi_thread */
+  osThreadDef(wifi_thread, wifi_thread_task, osPriorityNormal, 0, 1024);
+  wifi_threadHandle = osThreadCreate(osThread(wifi_thread), NULL);
+
+  /* definition and creation of cellular_proces */
+  osThreadDef(cellular_proces, cellular_processing_task, osPriorityNormal, 0, 1024);
+  cellular_procesHandle = osThreadCreate(osThread(cellular_proces), NULL);
+
+  /* definition and creation of cellular_thread */
+  osThreadDef(cellular_thread, cellular_thread_task, osPriorityNormal, 0, 1024);
+  cellular_threadHandle = osThreadCreate(osThread(cellular_thread), NULL);
 //
-//  /* definition and creation of wifi_processing */
-//  osThreadDef(wifi_processing, wifi_processing_task, osPriorityNormal, 0, 1024);
-//  wifi_processingHandle = osThreadCreate(osThread(wifi_processing), NULL);
-//
-//  /* definition and creation of wifi_thread */
-//  osThreadDef(wifi_thread, wifi_thread_task, osPriorityNormal, 0, 1024);
-//  wifi_threadHandle = osThreadCreate(osThread(wifi_thread), NULL);
-//
-//  /* definition and creation of cellular_proces */
-//  osThreadDef(cellular_proces, cellular_processing_task, osPriorityNormal, 0, 1024);
-//  cellular_procesHandle = osThreadCreate(osThread(cellular_proces), NULL);
-//
-//  /* definition and creation of cellular_thread */
-//  osThreadDef(cellular_thread, cellular_thread_task, osPriorityNormal, 0, 1024);
-//  cellular_threadHandle = osThreadCreate(osThread(cellular_thread), NULL);
-//
-//  /* definition and creation of downlink_thread */
-//  osThreadDef(downlink_thread, downlink_thread_task, osPriorityNormal, 0, 1024);
-//  downlink_threadHandle = osThreadCreate(osThread(downlink_thread), NULL);
+  /* definition and creation of downlink_thread */
+  osThreadDef(downlink_thread, downlink_thread_task, osPriorityNormal, 0, 1024);
+  downlink_threadHandle = osThreadCreate(osThread(downlink_thread), NULL);
 //
 //  /* definition and creation of appilcation_thr */
   osThreadDef(appilcation_thr, appilcation_thread_task, osPriorityNormal, 0, 1024);
   appilcation_thrHandle = osThreadCreate(osThread(appilcation_thr), NULL);
 //
-//  /* definition and creation of lorawan_thread */
-//  osThreadDef(lorawan_thread, lorawan_thread_task, osPriorityNormal, 0, 1024);
-//  lorawan_threadHandle = osThreadCreate(osThread(lorawan_thread), NULL);
-//
-//  /* definition and creation of lorawan_process */
-//  osThreadDef(lorawan_process, lorawan_processing_task, osPriorityNormal, 0, 1024);
-//  lorawan_processHandle = osThreadCreate(osThread(lorawan_process), NULL);
+  /* definition and creation of lorawan_thread */
+  osThreadDef(lorawan_thread, lorawan_thread_task, osPriorityNormal, 0, 1024);
+  lorawan_threadHandle = osThreadCreate(osThread(lorawan_thread), NULL);
+
+  /* definition and creation of lorawan_process */
+  osThreadDef(lorawan_process, lorawan_processing_task, osPriorityNormal, 0, 1024);
+  lorawan_processHandle = osThreadCreate(osThread(lorawan_process), NULL);
 
 
   /* USER CODE BEGIN RTOS_THREADS */
@@ -1183,63 +1184,63 @@ void appilcation_thread_task(void const * argument)
 
 	debug.printf("************************************* Smart Night Cell  *************************************\r\n");
 
-//	red_led.on();
-//	green_led.off();
-//	blue_led.off();
-//
-//
-//	device_reset_reason = reset_cause_get();
-//	debug.printf("Application Reset Reason is: %s\r\n", reset_cause_get_name(device_reset_reason));
-//
-//	uint32_t my_nor_id = nor.read_id();
-//	debug.printf("my_nor_id : %X\r\n", my_nor_id);
-//
-//
-//	uint8_t new_eeprom_byte = eeprom.read_byte(START_ADDRESS_OF_NEW_EEPROM);
-//
-//	if (NEW_EEPROM_CHECK_BYTE != new_eeprom_byte)
-//	{
-//		debug.printf("clearing EEPROM and loading default values\r\n");
-//
-//		eeprom.erase_eeprom();
-//		eeprom.write_byte(NEW_EEPROM_CHECK_BYTE, START_ADDRESS_OF_NEW_EEPROM);
-//
-//		eeprom.storage_counter_write(0, 0);
-//		eeprom.reader_counter_write(0, 0);
-//		eeprom.message_counter_write(0, 0);
-//
-//
-//		eeprom.write_int(0, START_ADDRESS_OF_WRITE_COUNTER_INDEX);
-//		eeprom.write_int(0, START_ADDRESS_OF_READ_COUNTER_INDEX);
-//		eeprom.write_int(0, START_ADDRESS_OF_MESSAGE_COUNTER_INDEX);
-//
-//		if (1 == nor_mutex.lock(1000))
-//		{
-//			debug.printf("Bulk Erase Begin\r\n");
-//			nor.bulk_erase();
-//			debug.printf("Bulk Erase End\r\n");
-//
-//			nor_mutex.unlock();
-//		}
-//
-//		peripherals.load_default_values();
-//		write_device_info.load_default_values();
-//		wifi.load_default_wifi_credentials();
-//
-//		next_message.load_default_values();
-//
-//
-//		lte.load_ssl_certificates();
-//
-//		osDelay(250);
-//	}
-//
-//	peripherals.read_from_eeprom();
-//
-//	read_device_info.get();
-//	memcpy(&write_device_info, &read_device_info, sizeof(device_info_t));
-//
-//	next_message.get();
+	red_led.on();
+	green_led.off();
+	blue_led.off();
+
+
+	device_reset_reason = reset_cause_get();
+	debug.printf("Application Reset Reason is: %s\r\n", reset_cause_get_name(device_reset_reason));
+
+	uint32_t my_nor_id = nor.read_id();
+	debug.printf("my_nor_id : %X\r\n", my_nor_id);
+
+
+	uint8_t new_eeprom_byte = eeprom.read_byte(START_ADDRESS_OF_NEW_EEPROM);
+
+	if (NEW_EEPROM_CHECK_BYTE != new_eeprom_byte)
+	{
+		debug.printf("clearing EEPROM and loading default values\r\n");
+
+		eeprom.erase_eeprom();
+		eeprom.write_byte(NEW_EEPROM_CHECK_BYTE, START_ADDRESS_OF_NEW_EEPROM);
+
+		eeprom.storage_counter_write(0, 0);
+		eeprom.reader_counter_write(0, 0);
+		eeprom.message_counter_write(0, 0);
+
+
+		eeprom.write_int(0, START_ADDRESS_OF_WRITE_COUNTER_INDEX);
+		eeprom.write_int(0, START_ADDRESS_OF_READ_COUNTER_INDEX);
+		eeprom.write_int(0, START_ADDRESS_OF_MESSAGE_COUNTER_INDEX);
+
+		if (1 == nor_mutex.lock(1000))
+		{
+			debug.printf("Bulk Erase Begin\r\n");
+			nor.bulk_erase();
+			debug.printf("Bulk Erase End\r\n");
+
+			nor_mutex.unlock();
+		}
+
+		peripherals.load_default_values();
+		write_device_info.load_default_values();
+		wifi.load_default_wifi_credentials();
+
+		next_message.load_default_values();
+
+
+		lte.load_ssl_certificates();
+
+		osDelay(250);
+	}
+
+	peripherals.read_from_eeprom();
+
+	read_device_info.get();
+	memcpy(&write_device_info, &read_device_info, sizeof(device_info_t));
+
+	next_message.get();
 
 
 
@@ -1255,87 +1256,87 @@ void appilcation_thread_task(void const * argument)
 //	}
 
 
-//
-//	nor.initialize_nor_flash();
-//	nor.unlock_all_sectors();
-//	nor.read_global_freeze_bit();
-//	nor.read_non_volatile_config_register();
-//	nor.read_volatile_config_register();
-//	nor.read_enhanced_volatile_config_register();
-//	nor.read_flag_register();
-//
-//	peripherals.start_application = 0;
-//	peripherals.power_on_all_peripherals = 1;
-//
-//	next_message.start_up = 1;
-//
-//	debug.printf("read_device_info.device_start_time: %d\r\n", read_device_info.device_start_time);
-//	debug.printf("read_device_info.communication_mode_enabled: %d\r\n", read_device_info.communication_mode_enabled);
-//	debug.printf("read_device_info.device_downlink_topic: %s\r\n", read_device_info.device_downlink_topic);
-//	debug.printf("read_device_info.device_id: %s\r\n", read_device_info.device_id);
-//	debug.printf("read_device_info.device_name: %s\r\n", read_device_info.device_name);
-//	debug.printf("read_device_info.device_profile: %s\r\n", read_device_info.device_profile);
-//	debug.printf("read_device_info.device_uplink_telemetry_topic: %s\r\n", read_device_info.device_uplink_telemetry_topic);
-//	debug.printf("read_device_info.port_number: %d\r\n", read_device_info.port_number);
-//	debug.printf("read_device_info.data_sampling_frequency_in_sec: %d\r\n", read_device_info.data_sampling_frequency_in_sec);
-//
-//	debug.printf("read_device_info.fw_ver: %s\r\n", read_device_info.fw_ver);
-//	debug.printf("read_device_info.new_fw_ver: %s\r\n", read_device_info.new_fw_ver);
-//
-//
-//
-//	lorawan.deinitialise(); // TODO: AMP 25/01/2026
-//
-//
-//	if (wifi_enable == read_device_info.communication_mode_enabled)
-//	{
-//		wifi.get_wifi_credentials();
-//		osDelay(500);
-//
-////		debug.printf("read_device_info.access_token: %s\r\n", read_device_info.access_token);
-//
-//		debug.printf("read_device_info.ap_password: %s\r\n", read_device_info.ap_password);
-//		debug.printf("read_device_info.ap_ssid: %s\r\n", read_device_info.ap_ssid);
-//		debug.printf("read_device_info.ap_static_ip: %s\r\n", read_device_info.ap_static_ip);
-//
-//		debug.printf("wificredentials[0].ssid: %s\r\n", wificredentials[0].ssid);
-//		debug.printf("wificredentials[1].ssid: %s\r\n", wificredentials[1].ssid);
-//		debug.printf("wificredentials[2].ssid: %s\r\n", wificredentials[2].ssid);
-//		debug.printf("wificredentials[3].ssid: %s\r\n", wificredentials[3].ssid);
-//		debug.printf("wificredentials[4].ssid: %s\r\n", wificredentials[4].ssid);
-//
-//		debug.printf("wificredentials[0].password: %s\r\n", wificredentials[0].password);
-//		debug.printf("wificredentials[1].password: %s\r\n", wificredentials[1].password);
-//		debug.printf("wificredentials[2].password: %s\r\n", wificredentials[2].password);
-//		debug.printf("wificredentials[3].password: %s\r\n", wificredentials[3].password);
-//		debug.printf("wificredentials[4].password: %s\r\n", wificredentials[4].password);
-//
-//		wifi.restart_module();
-//	}
-//
-//
-//
-//	else if (lorawan_enable == read_device_info.communication_mode_enabled)
-//	{
-//		debug.printf("read_device_info.lorawan_app_key: %s\r\n", read_device_info.lorawan_app_key);
-//		debug.printf("read_device_info.lorawan_nwk_key: %s\r\n", read_device_info.lorawan_nwk_key);
-//		debug.printf("read_device_info.lorawan_app_session_key: %s\r\n", read_device_info.lorawan_app_session_key);
-//		debug.printf("read_device_info.lorawan_nwk_session_key: %s\r\n", read_device_info.lorawan_nwk_session_key);
-//		debug.printf("read_device_info.lorawan_device_eui: %s\r\n", read_device_info.lorawan_device_eui);
-//		debug.printf("read_device_info.lorawan_join_eui: %s\r\n", read_device_info.lorawan_join_eui);
-//		debug.printf("read_device_info.lorawan_device_address: %s\r\n", read_device_info.lorawan_device_address);
-//
-//		lorawan.initialise();
-//	}
-//
-//	osDelay(250);
-//	radar.initialise();
+
+	nor.initialize_nor_flash();
+	nor.unlock_all_sectors();
+	nor.read_global_freeze_bit();
+	nor.read_non_volatile_config_register();
+	nor.read_volatile_config_register();
+	nor.read_enhanced_volatile_config_register();
+	nor.read_flag_register();
+
+	peripherals.start_application = 0;
+	peripherals.power_on_all_peripherals = 1;
+
+	next_message.start_up = 1;
+
+	debug.printf("read_device_info.device_start_time: %d\r\n", read_device_info.device_start_time);
+	debug.printf("read_device_info.communication_mode_enabled: %d\r\n", read_device_info.communication_mode_enabled);
+	debug.printf("read_device_info.device_downlink_topic: %s\r\n", read_device_info.device_downlink_topic);
+	debug.printf("read_device_info.device_id: %s\r\n", read_device_info.device_id);
+	debug.printf("read_device_info.device_name: %s\r\n", read_device_info.device_name);
+	debug.printf("read_device_info.device_profile: %s\r\n", read_device_info.device_profile);
+	debug.printf("read_device_info.device_uplink_telemetry_topic: %s\r\n", read_device_info.device_uplink_telemetry_topic);
+	debug.printf("read_device_info.port_number: %d\r\n", read_device_info.port_number);
+	debug.printf("read_device_info.data_sampling_frequency_in_sec: %d\r\n", read_device_info.data_sampling_frequency_in_sec);
+
+	debug.printf("read_device_info.fw_ver: %s\r\n", read_device_info.fw_ver);
+	debug.printf("read_device_info.new_fw_ver: %s\r\n", read_device_info.new_fw_ver);
+
+
+
+	lorawan.deinitialise(); // TODO: AMP 25/01/2026
+
+
+	if (wifi_enable == read_device_info.communication_mode_enabled)
+	{
+		wifi.get_wifi_credentials();
+		osDelay(500);
+
+//		debug.printf("read_device_info.access_token: %s\r\n", read_device_info.access_token);
+
+		debug.printf("read_device_info.ap_password: %s\r\n", read_device_info.ap_password);
+		debug.printf("read_device_info.ap_ssid: %s\r\n", read_device_info.ap_ssid);
+		debug.printf("read_device_info.ap_static_ip: %s\r\n", read_device_info.ap_static_ip);
+
+		debug.printf("wificredentials[0].ssid: %s\r\n", wificredentials[0].ssid);
+		debug.printf("wificredentials[1].ssid: %s\r\n", wificredentials[1].ssid);
+		debug.printf("wificredentials[2].ssid: %s\r\n", wificredentials[2].ssid);
+		debug.printf("wificredentials[3].ssid: %s\r\n", wificredentials[3].ssid);
+		debug.printf("wificredentials[4].ssid: %s\r\n", wificredentials[4].ssid);
+
+		debug.printf("wificredentials[0].password: %s\r\n", wificredentials[0].password);
+		debug.printf("wificredentials[1].password: %s\r\n", wificredentials[1].password);
+		debug.printf("wificredentials[2].password: %s\r\n", wificredentials[2].password);
+		debug.printf("wificredentials[3].password: %s\r\n", wificredentials[3].password);
+		debug.printf("wificredentials[4].password: %s\r\n", wificredentials[4].password);
+
+		wifi.restart_module();
+	}
+
+
+
+	else if (lorawan_enable == read_device_info.communication_mode_enabled)
+	{
+		debug.printf("read_device_info.lorawan_app_key: %s\r\n", read_device_info.lorawan_app_key);
+		debug.printf("read_device_info.lorawan_nwk_key: %s\r\n", read_device_info.lorawan_nwk_key);
+		debug.printf("read_device_info.lorawan_app_session_key: %s\r\n", read_device_info.lorawan_app_session_key);
+		debug.printf("read_device_info.lorawan_nwk_session_key: %s\r\n", read_device_info.lorawan_nwk_session_key);
+		debug.printf("read_device_info.lorawan_device_eui: %s\r\n", read_device_info.lorawan_device_eui);
+		debug.printf("read_device_info.lorawan_join_eui: %s\r\n", read_device_info.lorawan_join_eui);
+		debug.printf("read_device_info.lorawan_device_address: %s\r\n", read_device_info.lorawan_device_address);
+
+		lorawan.initialise();
+	}
+
+	osDelay(250);
+	radar.initialise();
 //
 //
 //	/* Infinite loop */
 //
-//	uint8_t sensor_data_fetch_result = 0;
-//	uint8_t sensor_data_attempt_counter = 0;
+	uint8_t sensor_data_fetch_result = 0;
+	uint8_t sensor_data_attempt_counter = 0;
 
 	for(;;)
 	{
@@ -1344,93 +1345,122 @@ void appilcation_thread_task(void const * argument)
 
 		HAL_IWDG_Refresh(&hiwdg1);
 
-	    read_and_print_sht40();   // ✅ THIS WILL PRINT
+	  //  read_and_print_sht40();   // ✅ THIS WILL PRINT
 	    osDelay(1000);
 
 
 
-//		application_thread_loop_start_time = rtc.get_time_in_utc();
-//
-//		if (1 == cellular_mutex.lock(1000)) //  TODO: check if acquiring this mutex is necessary
-//		{
-//			if ((1 == peripherals.power_on_all_peripherals) && (1 == peripherals.start_application))
-//			{
-////				while ((1 != sensor_data_fetch_result) || (sensor_data_attempt_counter < 3))
-////				{
-////					green_led.toggle();
-////
-////					radar.fetch_parameters();
-////
-////					if (1 == radar_sensor_data_processing_sempahore.acquire(1000))
-////					{
-////						sensor_data_fetch_result = radar.process_received_data();
-////					}
-////
-////					sensor_data_attempt_counter++;
-////				}
-//
-//				water_tank_write_data.water_level_in_percentage = 9782; // TODO: remove this
-//				sensor_data_fetch_result = 1; // TODO: remove this
-//
-//
-//				debug.printf("water level percentage: %d\r\n", water_tank_write_data.water_level_in_percentage);
-//
-//
-//				if (1 == sensor_data_fetch_result)
-//				{
-//					water_tank_write_data.device_battery_percentage = present_battery_percentage;
-//					water_tank_write_data.sample_epoch_time = rtc.get_time_in_utc();
-//
-//					message_counter_index = eeprom.read_int(START_ADDRESS_OF_MESSAGE_COUNTER_INDEX);
-//					message_counter = eeprom.message_counter_read(message_counter_index);
-//					water_tank_write_data.packet_number = message_counter;
-//
-//					sprintf(water_tank_write_data.device_id, "%s", read_device_info.device_id);
-//
-//					if (1 == power_status)
-//					{
-//						sprintf(water_tank_write_data.device_power_source, "%s", "mains");
-//					}
-//					else
-//					{
-//						sprintf(water_tank_write_data.device_power_source, "%s", "battery");
-//					}
-//
-//
-//					memset(water_tank_write_data_buffer, 0, sizeof(water_tank_write_data_buffer));
-//					memcpy(water_tank_write_data_buffer, &water_tank_write_data, sizeof(water_tank_write_data));
-//
-//					nor.save_data_packets(water_tank_write_data_buffer);
-//
-//					message_counter++;
-//					eeprom.message_counter_write(message_counter, message_counter_index);
-//				}
-//				else
-//				{
-//					debug.printf("unable to fetch water level from the radar sensor\r\n");
-//				}
-//			}
-//
-//			cellular_mutex.unlock();
-//		}
-//
-//		application_thread_loop_end_time = rtc.get_time_in_utc();
-//
-//		if (1 == sensor_data_fetch_result)
-//		{
-//			time_to_sleep_in_sec = read_device_info.data_sampling_frequency_in_sec - ((application_thread_loop_end_time - application_thread_loop_start_time) % read_device_info.data_sampling_frequency_in_sec);
-//		}
-//		else
-//		{
-////			time_to_sleep_in_sec = 30;
-//			time_to_sleep_in_sec = 10;
-//		}
-//
-////		debug.printf("time_to_sleep_in_sec: %d\r\n", time_to_sleep_in_sec);
-//
-//		osDelay(time_to_sleep_in_sec * 1000);
+		application_thread_loop_start_time = rtc.get_time_in_utc();
 
-//	}
+		if (1 == cellular_mutex.lock(1000)) //  TODO: check if acquiring this mutex is necessary
+		{
+			if ((1 == peripherals.power_on_all_peripherals) && (1 == peripherals.start_application))
+			{
+//				while ((1 != sensor_data_fetch_result) || (sensor_data_attempt_counter < 3))
+//				{
+//					green_led.toggle();
+//
+//					radar.fetch_parameters();
+//
+//					if (1 == radar_sensor_data_processing_sempahore.acquire(1000))
+//					{
+//						sensor_data_fetch_result = radar.process_received_data();
+//					}
+//
+//					sensor_data_attempt_counter++;
+//				}
+
+				//water_tank_write_data.water_level_in_percentage = 9782; // TODO: remove this
+				//sensor_data_fetch_result = 1; // TODO: remove this
+				night_cell_write_data.temperature = 43;
+				sensor_data_fetch_result = 1;
+				debug.printf("night cell temperature: %d\r\n", night_cell_write_data.temperature);
+
+				//debug.printf("water level percentage: %d\r\n", water_tank_write_data.water_level_in_percentage);
+
+
+				if (1 == sensor_data_fetch_result)
+				{
+					night_cell_write_data.device_battery_percentage = present_battery_percentage;
+					//water_tank_write_data.device_battery_percentage = present_battery_percentage;
+
+					debug.printf("Here 1\r\n");
+
+					night_cell_write_data.sample_epoch_time = rtc.get_time_in_utc();
+					//water_tank_write_data.sample_epoch_time = rtc.get_time_in_utc();
+
+					message_counter_index = eeprom.read_int(START_ADDRESS_OF_MESSAGE_COUNTER_INDEX);
+					message_counter = eeprom.message_counter_read(message_counter_index);
+					//water_tank_write_data.packet_number = message_counter;
+					night_cell_write_data.packet_number = message_counter;
+
+
+					debug.printf("Here 2\r\n");
+
+					sprintf(night_cell_write_data.device_id, "%s", read_device_info.device_id);
+
+					if (1 == power_status)
+					{
+						sprintf(night_cell_write_data.device_power_source, "%s", "mains");
+					}
+					else
+					{
+						sprintf(night_cell_write_data.device_power_source, "%s", "battery");
+					}
+
+					debug.printf("Here 3\r\n");
+
+
+					memset(night_cell_write_data_buffer, 0, sizeof(night_cell_write_data_buffer));
+					memcpy(night_cell_write_data_buffer, &night_cell_write_data, sizeof(night_cell_write_data));
+
+					for(uint8_t i = 0 ; i < sizeof(night_cell_write_data_buffer) ; i++)
+					{
+						sprintf(&night_cell_write_data_buffer[i], "%d", i);
+						debug.printf("%c", night_cell_write_data_buffer[i]);
+					}
+
+					debug.printf("\r\n");
+
+					debug.printf("Before NOR Save\r\n");
+
+					nor.save_data_packets(night_cell_write_data_buffer);
+
+					debug.printf("After NOR Save\r\n");
+					debug.printf("Here 5\r\n");
+
+					message_counter++;
+
+					eeprom.message_counter_write(message_counter, message_counter_index);
+
+					debug.printf("Here 6\r\n");
+				}
+				else
+				{
+					debug.printf("unable to fetch water level from the radar sensor\r\n");
+				}
+			}
+
+			cellular_mutex.unlock();
+		}
+
+		application_thread_loop_end_time = rtc.get_time_in_utc();
+
+		if (1 == sensor_data_fetch_result)
+		{
+			time_to_sleep_in_sec = read_device_info.data_sampling_frequency_in_sec - ((application_thread_loop_end_time - application_thread_loop_start_time) % read_device_info.data_sampling_frequency_in_sec);
+		}
+		else
+		{
+//			time_to_sleep_in_sec = 30;
+			time_to_sleep_in_sec = 10;
+		}
+
+//		debug.printf("time_to_sleep_in_sec: %d\r\n", time_to_sleep_in_sec);
+
+		osDelay(time_to_sleep_in_sec * 1000);
+
+
 	}
 
   /* USER CODE END appilcation_thread_task */

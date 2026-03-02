@@ -567,8 +567,8 @@ void lorawan_thread_task(void const * argument)
 
 				  if (read_page_counter < write_page_counter)
 				  {
-					  memset(&water_tank_read_data_buffer, 0, sizeof(water_tank_read_data_buffer));
-					  nor.read_data_packets(water_tank_read_data_buffer);
+					  memset(&night_cell_read_data_buffer, 0, sizeof(night_cell_read_data_buffer));
+					  nor.read_data_packets(night_cell_read_data_buffer);
 
 //					  memcpy(&water_tank_read_data, water_tank_read_data_buffer, sizeof(water_tank_read_data_buffer));
 //

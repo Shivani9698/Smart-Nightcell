@@ -1,36 +1,36 @@
-../nor_flash/norflash.cpp:34:1:nor_flash::nor_flash(SPI_HandleTypeDef*, GPIO_TypeDef*, uint16_t)	1
-../nor_flash/norflash.cpp:40:1:nor_flash::~nor_flash()	1
-../nor_flash/norflash.cpp:40:1:virtual nor_flash::~nor_flash()	1
-../nor_flash/norflash.cpp:46:6:void nor_flash::nor_transmit_byte(uint8_t)	1
-../nor_flash/norflash.cpp:52:9:uint8_t nor_flash::nor_write_byte(uint8_t)	1
-../nor_flash/norflash.cpp:62:9:uint8_t nor_flash::nor_write_bytes(char*, uint16_t)	1
-../nor_flash/norflash.cpp:72:9:uint8_t nor_flash::nor_write_read_bytes(char*, char*, uint16_t)	1
-../nor_flash/norflash.cpp:82:6:void nor_flash::chip_enable()	1
-../nor_flash/norflash.cpp:88:6:void nor_flash::chip_disable()	1
-../nor_flash/norflash.cpp:94:6:void nor_flash::write_enable()	1
-../nor_flash/norflash.cpp:101:6:void nor_flash::write_disable()	1
-../nor_flash/norflash.cpp:109:10:uint32_t nor_flash::read_id()	1
-../nor_flash/norflash.cpp:130:6:void nor_flash::write_register(uint8_t, uint8_t)	1
-../nor_flash/norflash.cpp:145:6:void nor_flash::clear_register(uint8_t)	1
-../nor_flash/norflash.cpp:159:10:uint8_t nor_flash::read_register(uint8_t)	2
-../nor_flash/norflash.cpp:180:10:uint16_t nor_flash::read_novolatile_read_register(uint8_t)	1
-../nor_flash/norflash.cpp:202:6:void nor_flash::wait_for_oip_to_clear()	2
-../nor_flash/norflash.cpp:214:6:void nor_flash::reset()	1
-../nor_flash/norflash.cpp:234:6:void nor_flash::unlock_all_sectors()	1
-../nor_flash/norflash.cpp:240:6:void nor_flash::bulk_erase()	2
-../nor_flash/norflash.cpp:264:6:void nor_flash::sector_erase(uint32_t)	1
-../nor_flash/norflash.cpp:283:6:void nor_flash::page_write(uint32_t, char*, uint16_t)	2
-../nor_flash/norflash.cpp:311:6:void nor_flash::page_read(uint32_t, char*, uint16_t)	2
-../nor_flash/norflash.cpp:349:6:void nor_flash::initialize_nor_flash()	4
-../nor_flash/norflash.cpp:385:10:uint16_t nor_flash::read_non_volatile_config_register()	1
-../nor_flash/norflash.cpp:405:9:uint8_t nor_flash::read_volatile_config_register()	1
-../nor_flash/norflash.cpp:421:9:uint8_t nor_flash::read_enhanced_volatile_config_register()	1
-../nor_flash/norflash.cpp:437:9:uint8_t nor_flash::read_flag_register()	1
-../nor_flash/norflash.cpp:453:9:uint8_t nor_flash::read_global_freeze_bit()	1
-../nor_flash/norflash.cpp:469:6:void nor_flash::erase_sub_subsector(uint32_t)	1
-../nor_flash/norflash.cpp:489:9:uint8_t nor_flash::save_data_packets(char*)	5
-../nor_flash/norflash.cpp:546:9:uint8_t nor_flash::read_data_packets(char*)	1
-../nor_flash/norflash.cpp:579:1:void __static_initialization_and_destruction_0()	1
-../nor_flash/norflash.cpp:579:1:void __static_initialization_and_destruction_1()	1
-../nor_flash/norflash.cpp:579:1:cpp)	1
-../nor_flash/norflash.cpp:579:1:cpp)	1
+../nor_flash/norflash.cpp:39:1:nor_flash::nor_flash(SPI_HandleTypeDef*, GPIO_TypeDef*, uint16_t)	1
+../nor_flash/norflash.cpp:45:1:nor_flash::~nor_flash()	1
+../nor_flash/norflash.cpp:45:1:virtual nor_flash::~nor_flash()	1
+../nor_flash/norflash.cpp:51:6:void nor_flash::nor_transmit_byte(uint8_t)	1
+../nor_flash/norflash.cpp:57:9:uint8_t nor_flash::nor_write_byte(uint8_t)	1
+../nor_flash/norflash.cpp:67:9:uint8_t nor_flash::nor_write_bytes(char*, uint16_t)	1
+../nor_flash/norflash.cpp:77:9:uint8_t nor_flash::nor_write_read_bytes(char*, char*, uint16_t)	1
+../nor_flash/norflash.cpp:87:6:void nor_flash::chip_enable()	1
+../nor_flash/norflash.cpp:94:6:void nor_flash::chip_disable()	1
+../nor_flash/norflash.cpp:100:6:void nor_flash::write_enable()	1
+../nor_flash/norflash.cpp:107:6:void nor_flash::write_disable()	1
+../nor_flash/norflash.cpp:115:10:uint32_t nor_flash::read_id()	1
+../nor_flash/norflash.cpp:136:6:void nor_flash::write_register(uint8_t, uint8_t)	1
+../nor_flash/norflash.cpp:151:6:void nor_flash::clear_register(uint8_t)	1
+../nor_flash/norflash.cpp:165:10:uint8_t nor_flash::read_register(uint8_t)	1
+../nor_flash/norflash.cpp:186:10:uint16_t nor_flash::read_novolatile_read_register(uint8_t)	1
+../nor_flash/norflash.cpp:222:6:void nor_flash::wait_for_oip_to_clear()	2
+../nor_flash/norflash.cpp:240:6:void nor_flash::reset()	1
+../nor_flash/norflash.cpp:260:6:void nor_flash::unlock_all_sectors()	1
+../nor_flash/norflash.cpp:266:6:void nor_flash::bulk_erase()	2
+../nor_flash/norflash.cpp:290:6:void nor_flash::sector_erase(uint32_t)	1
+../nor_flash/norflash.cpp:314:6:void nor_flash::page_write(uint32_t, char*, uint16_t)	1
+../nor_flash/norflash.cpp:364:6:void nor_flash::page_read(uint32_t, char*, uint16_t)	2
+../nor_flash/norflash.cpp:403:6:void nor_flash::initialize_nor_flash()	4
+../nor_flash/norflash.cpp:439:10:uint16_t nor_flash::read_non_volatile_config_register()	1
+../nor_flash/norflash.cpp:459:9:uint8_t nor_flash::read_volatile_config_register()	1
+../nor_flash/norflash.cpp:475:9:uint8_t nor_flash::read_enhanced_volatile_config_register()	1
+../nor_flash/norflash.cpp:491:9:uint8_t nor_flash::read_flag_register()	1
+../nor_flash/norflash.cpp:507:9:uint8_t nor_flash::read_global_freeze_bit()	1
+../nor_flash/norflash.cpp:523:6:void nor_flash::erase_sub_subsector(uint32_t)	1
+../nor_flash/norflash.cpp:543:9:uint8_t nor_flash::save_data_packets(char*)	5
+../nor_flash/norflash.cpp:616:9:uint8_t nor_flash::read_data_packets(char*)	1
+../nor_flash/norflash.cpp:649:1:void __static_initialization_and_destruction_0()	1
+../nor_flash/norflash.cpp:649:1:void __static_initialization_and_destruction_1()	1
+../nor_flash/norflash.cpp:649:1:cpp)	1
+../nor_flash/norflash.cpp:649:1:cpp)	1

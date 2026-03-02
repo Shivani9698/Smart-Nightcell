@@ -23,8 +23,13 @@ uint32_t address = 0;
 
 char temp_bytes[256] = {'\0'};
 
-char water_tank_write_data_buffer[WRITE_SIZE] = "";
-char water_tank_read_data_buffer[WRITE_SIZE] = "";
+//char water_tank_write_data_buffer[WRITE_SIZE] = "";
+//char water_tank_read_data_buffer[WRITE_SIZE] = "";
+
+
+char night_cell_write_data_buffer[WRITE_SIZE] = "";
+char night_cell_read_data_buffer[WRITE_SIZE] = "";
+
 
 
 nor_flash nor(&hspi1, SPI_CHIP_SELECT_GPIO_Port, SPI_CHIP_SELECT_Pin);
@@ -82,6 +87,7 @@ uint8_t nor_flash::nor_write_read_bytes(char * send_data, char * read_data, uint
 void nor_flash::chip_enable(void)
 {
 	this->off();
+
 }
 
 
@@ -168,10 +174,10 @@ uint8_t  nor_flash::read_register(uint8_t register_address)
 
 	chip_disable();
 
-	while(counter < 100000)
-	{
-		counter++;
-	}
+//	while(counter < 100000)
+//	{
+//		counter++;
+//	}
 
 	return value;
 }
@@ -199,15 +205,35 @@ uint16_t nor_flash::read_novolatile_read_register(uint8_t register_address)
 }
 
 
+//void nor_flash::wait_for_oip_to_clear(void)
+//{
+//	uint8_t value = 0xFF;
+//
+//	do
+//	{
+//		value = read_register(FLASH_INS_RDSR);
+//
+//	}
+//	while((value & 0x01) == 0x01);
+//}
+
+
+
 void nor_flash::wait_for_oip_to_clear(void)
 {
-	uint8_t value = 0xFF;
+    uint8_t value;
 
-	do
-	{
-		value = read_register(FLASH_INS_RDSR);
+  //  uint32_t cnt = 0;
 
-	}while((value & 0x01) == 0x01);
+
+    while (1)
+    {
+        value = read_register(FLASH_INS_RDSR);
+        if ((value & 0x01) == 0)
+            break;
+
+		//HAL_IWDG_Refresh(&hiwdg1);
+    }
 }
 
 
@@ -263,8 +289,10 @@ void nor_flash::bulk_erase(void)
 
 void nor_flash::sector_erase(uint32_t sector_address)
 {
-	write_enable();
+
 	wait_for_oip_to_clear();
+
+	write_enable();
 
 	chip_enable();
 
@@ -275,18 +303,35 @@ void nor_flash::sector_erase(uint32_t sector_address)
 	nor_write_byte(sector_address & ADDRESS_BMASK0);
 
 	chip_disable();
+
 	wait_for_oip_to_clear();
+
 	write_disable();
+
 }
 
 
 void nor_flash::page_write(uint32_t page_address, char * write_data, uint16_t length)
 {
+
+	wait_for_oip_to_clear();
+
 	write_enable();
 
-	while((read_register(FLASH_INS_RDSR) & 0x02) != 0x02);
+
+
+	uint8_t sr = read_register(FLASH_INS_RDSR);
+	debug.printf("SR before PP = 0x%02X (OIP=%d, WEL=%d)\r\n",
+	             sr,
+	             sr & 0x01,
+	             (sr >> 1) & 0x01);
+
+//	while((read_register(FLASH_INS_RDSR) & 0x02) != 0x02);
 
 	chip_enable();
+
+
+
 
 	nor_write_byte(FLASH_INS_PP4BYTE);
 	nor_write_byte((page_address & ADDRESS_BMASK3) >> 24);
@@ -296,13 +341,21 @@ void nor_flash::page_write(uint32_t page_address, char * write_data, uint16_t le
 
 	nor_write_bytes(write_data, length);
 
+	//nor_write_byte(write_data[0]);
+
+
+
 	//osDelay(10);// This is important dont change
 	chip_disable();
 	//osDelay(1);
-	wait_for_oip_to_clear();
 	//osDelay(10);
 
+	wait_for_oip_to_clear();
+
 	write_disable();
+
+
+
 	//debug.printf("Page Write End \r\n");
 	//osDelay(5);
 }
@@ -326,6 +379,7 @@ void nor_flash::page_read(uint32_t page_address, char * read_data, uint16_t leng
 //	nor_write_byte(DUMMY_BYTE);
 
 	//nor_write_read_byte(DUMMY_BYTE, read_data, length);
+
 
 	for(int i = 0 ; i < length ; i++)
 	{
@@ -488,6 +542,7 @@ void nor_flash::erase_sub_subsector(uint32_t address)
 
 uint8_t nor_flash::save_data_packets(char* data_buffer)
 {
+
 	uint8_t res = 0;
 
 	write_index = eeprom.read_int(START_ADDRESS_OF_WRITE_COUNTER_INDEX);
@@ -495,7 +550,7 @@ uint8_t nor_flash::save_data_packets(char* data_buffer)
 
 	sector = (write_page_counter / MAX_SAMPLES_IN_A_SECTOR) %  NUMBER_OF_SECTORS;
 	page = write_page_counter % MAX_SAMPLES_IN_A_SECTOR;
-	address = (sector * SECTOR_SIZE) + (page * WRITE_SIZE);
+	address =  (sector * SECTOR_SIZE) + (page * WRITE_SIZE);
 
 	if(0 == (write_page_counter % MAX_SAMPLES_IN_A_SECTOR))
 	{
@@ -504,8 +559,12 @@ uint8_t nor_flash::save_data_packets(char* data_buffer)
 		if (1 == nor_mutex.lock(1000))
 		{
 			__disable_irq();
+			debug.printf("Before sector erase\r\n");
+
 			nor.sector_erase(address);
 			__enable_irq();
+			debug.printf("After sector erase\r\n");
+
 
 			nor_mutex.unlock();
 		}
@@ -515,7 +574,17 @@ uint8_t nor_flash::save_data_packets(char* data_buffer)
 	{
 		__disable_irq();
 
+		debug.printf("Before page write\r\n");
+
+		debug.printf("Page Write Addr = 0x%08lX, Len = %d\r\n", address, WRITE_SIZE);
+
+
 		nor.page_write(address , &data_buffer[0], WRITE_SIZE);
+
+
+		debug.printf("WRITE_SIZE = %d\r\n", WRITE_SIZE);
+
+		debug.printf("After page write\r\n");
 
 		__enable_irq();
 
@@ -535,9 +604,10 @@ uint8_t nor_flash::save_data_packets(char* data_buffer)
 
 		eeprom.write_int(write_index , START_ADDRESS_OF_WRITE_COUNTER_INDEX);
 	}
+	debug.printf("Before EEPROM write\r\n");
 
 	eeprom.storage_counter_write(write_page_counter, write_index);
-
+	debug.printf("After EEPROM write\r\n");
 
 	return res;
 }
